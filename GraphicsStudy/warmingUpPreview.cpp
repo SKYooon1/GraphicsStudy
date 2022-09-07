@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <random>
+#include <conio.h>
 
 using namespace std;
 
@@ -16,7 +17,7 @@ public:
 	{
 		random_device rd;
 		mt19937 gen(rd());
-		uniform_int_distribution<int> uid(0, 1);
+		uniform_int_distribution<int> uid(0, 2);
 
 		member_.clear();
 		for (int i = 0; i < 9; ++i)
@@ -87,37 +88,89 @@ void addMatrix(const Matrix& a, const Matrix& b);
 void subtractMatrix(const Matrix& a, const Matrix& b);
 void transposeMatrix(Matrix& a, Matrix& b);
 void expandMatrix(const Matrix& a, const Matrix& b);
+void help();
 
 int main()
 {
 	Matrix a, b;
+
 	cout << "Matrix A" << endl;
 	a.printMatrix();
-	a.printDeterminant();
-
-	cout << endl;
-
 	cout << "Matrix B" << endl;
 	b.printMatrix();
-	b.printDeterminant();
-
 	cout << endl;
 
-	multiplyMatrix(a, b);
+	help();
 
-	cout << endl;
+	while (true)
+	{
+		char key{};
 
-	addMatrix(a, b);
+		cout << "Input command";
+		key = _getch();
 
-	cout << endl;
+		switch (key)
+		{
+		case 'q':
+		case 0x1B:
+			return {};
+		case 'h':
+			help();
+			break;
+		case 'm':
+			multiplyMatrix(a, b);
+			break;
+		case 'a':
+			addMatrix(a, b);
+			break;
+		case 's':
+			subtractMatrix(a, b);
+			break;
+		case 'd':
+			cout << "The determinants of Matrices" << endl;
+			cout << "Matrix A" << endl;
+			a.printMatrix();
+			a.printDeterminant();
+			cout << endl << "Matrix B" << endl;
+			b.printMatrix();
+			b.printDeterminant();
+			cout << endl;
+			break;
+		case 't':
+			transposeMatrix(a, b);
+			break;
+		case 'e':
+			expandMatrix(a, b);
+			break;
+		case 'r':
+			cout << "Make new matrices" << endl;
+			a.initialize();
+			b.initialize();
+			cout << "Matrix A" << endl;
+			a.printMatrix();
+			cout << "Matrix B" << endl;
+			b.printMatrix();
+			cout << endl;
+			break;
+		default:
+			cout << "Wrong command" << endl;
+			break;
+		}
+	}
+}
 
-	subtractMatrix(a, b);
-
-	cout << endl;
-
-	transposeMatrix(a, b);
-
-	expandMatrix(a, b);
+void help()
+{
+	cout << "명령어 설명" << endl;
+	cout << "m : 행렬의 곱셈" << endl;
+	cout << "a : 행렬의 덧셈" << endl;
+	cout << "s : 행렬의 뺄셈" << endl;
+	cout << "d : 각 행렬식의 값" << endl;
+	cout << "t : 전치행렬과 행렬식의 값" << endl;
+	cout << "e : 4x4로 변환된 행렬과 그 행렬식의 값" << endl;
+	cout << "r : 행렬의 값 랜덤 재설정" << endl;
+	cout << "h : 명령어 설명" << endl;
+	cout << "q : 프로그램 종료" << endl << endl;
 }
 
 void multiplyMatrix(const Matrix& a, const Matrix& b)
@@ -143,6 +196,7 @@ void multiplyMatrix(const Matrix& a, const Matrix& b)
 	b.printMatrix();
 	cout << "=" << endl;
 	mul.printMatrix();
+	cout << endl;
 }
 
 void addMatrix(const Matrix& a, const Matrix& b)
@@ -160,6 +214,7 @@ void addMatrix(const Matrix& a, const Matrix& b)
 	b.printMatrix();
 	cout << "=" << endl;
 	add.printMatrix();
+	cout << endl;
 }
 
 void subtractMatrix(const Matrix& a, const Matrix& b)
@@ -177,6 +232,7 @@ void subtractMatrix(const Matrix& a, const Matrix& b)
 	b.printMatrix();
 	cout << "=" << endl;
 	sub.printMatrix();
+	cout << endl;
 }
 
 void transposeMatrix(Matrix& a, Matrix& b)
@@ -201,6 +257,7 @@ void transposeMatrix(Matrix& a, Matrix& b)
 
 	a.transposeMatrix();
 	b.transposeMatrix();
+	cout << endl;
 }
 
 void expandMatrix(const Matrix& a, const Matrix& b)
@@ -220,4 +277,5 @@ void expandMatrix(const Matrix& a, const Matrix& b)
 	cout << "->" << endl;
 	b.printExpandedMatrix();
 	a.printDeterminant();
+	cout << endl;
 }
