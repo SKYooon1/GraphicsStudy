@@ -24,7 +24,7 @@ public:
 		calculateDeterminant();
 	}
 
-	void print() const
+	void printMatrix() const
 	{
 		for (int i{0}; i < 3; ++i)
 		{
@@ -35,11 +35,37 @@ public:
 		}
 	}
 
+	void printExpandedMatrix() const
+	{
+		for (int i{ 0 }; i < 3; ++i)
+		{
+			cout << "| ";
+			for (int j{ i * 3 }; j < i * 3 + 3; ++j)
+				cout << member_[j] << " ";
+			cout << 0 << " ";
+			cout << "|" << endl;
+		}
+
+		cout << "| 0 0 0 1 |" << endl;
+	}
+
 	void transposeMatrix()
 	{
 		swap(member_[1], member_[3]);
 		swap(member_[2], member_[6]);
 		swap(member_[5], member_[7]);
+	}
+
+	void printDeterminant() const
+	{
+		cout << "The determinant is " << determinant_ << endl;
+	}
+
+	int member(const int i) const { return member_[i]; }
+
+	void inputValue(const int position, const int value)
+	{
+		member_[position] = value;
 	}
 
 private:
@@ -48,12 +74,150 @@ private:
 
 	void calculateDeterminant()
 	{
-		determinant_ = 0;		// 계산식 추가 필요
+		int determinant{};
+		for (int i = 0; i < 3; ++i)
+			determinant += member_[i] * (member_[3 + ((i + 1) % 3)] * member_[6 + ((i + 2) % 3)]
+				- member_[3 + ((i + 2) % 3)] * member_[6 + ((i + 1) % 3)]);
+		determinant_ = determinant;
 	}
 };
 
+void multiplyMatrix(const Matrix& a, const Matrix& b);
+void addMatrix(const Matrix& a, const Matrix& b);
+void subtractMatrix(const Matrix& a, const Matrix& b);
+void transposeMatrix(Matrix& a, Matrix& b);
+void expandMatrix(const Matrix& a, const Matrix& b);
+
 int main()
 {
-	Matrix a;
-	a.print();
+	Matrix a, b;
+	cout << "Matrix A" << endl;
+	a.printMatrix();
+	a.printDeterminant();
+
+	cout << endl;
+
+	cout << "Matrix B" << endl;
+	b.printMatrix();
+	b.printDeterminant();
+
+	cout << endl;
+
+	multiplyMatrix(a, b);
+
+	cout << endl;
+
+	addMatrix(a, b);
+
+	cout << endl;
+
+	subtractMatrix(a, b);
+
+	cout << endl;
+
+	transposeMatrix(a, b);
+
+	expandMatrix(a, b);
+}
+
+void multiplyMatrix(const Matrix& a, const Matrix& b)
+{
+	Matrix mul;
+
+	for (int i = 0; i < 3; i++)
+	{
+		for (int j = 0; j < 3; j++)
+		{
+			int sum{};
+			for (int k = 0; k < 3; k++)
+			{
+				sum += a.member((i * 3) + k) * b.member((k * 3) + j);
+			}
+			mul.inputValue((i * 3) + j, sum);
+		}
+	}
+
+	cout << "Matrix A * Matrix B" << endl;
+	a.printMatrix();
+	cout << "*" << endl;
+	b.printMatrix();
+	cout << "=" << endl;
+	mul.printMatrix();
+}
+
+void addMatrix(const Matrix& a, const Matrix& b)
+{
+	Matrix add;
+
+	for (int i{ 0 }; i < 9; ++i)
+	{
+		add.inputValue(i, a.member(i) + b.member(i));
+	}
+
+	cout << "Matrix A + Matrix B" << endl;
+	a.printMatrix();
+	cout << "+" << endl;
+	b.printMatrix();
+	cout << "=" << endl;
+	add.printMatrix();
+}
+
+void subtractMatrix(const Matrix& a, const Matrix& b)
+{
+	Matrix sub;
+
+	for (int i{ 0 }; i < 9; ++i)
+	{
+		sub.inputValue(i, a.member(i) - b.member(i));
+	}
+
+	cout << "Matrix A - Matrix B" << endl;
+	a.printMatrix();
+	cout << "-" << endl;
+	b.printMatrix();
+	cout << "=" << endl;
+	sub.printMatrix();
+}
+
+void transposeMatrix(Matrix& a, Matrix& b)
+{
+	cout << "Transposed Matrix" << endl;
+
+	cout << "Matrix A" << endl;
+
+	a.printMatrix();
+	a.transposeMatrix();
+	cout << "->" << endl;
+	a.printMatrix();
+	a.printDeterminant();
+
+	cout << endl << "Matrix B" << endl;
+
+	b.printMatrix();
+	b.transposeMatrix();
+	cout << "->" << endl;
+	b.printMatrix();
+	b.printDeterminant();
+
+	a.transposeMatrix();
+	b.transposeMatrix();
+}
+
+void expandMatrix(const Matrix& a, const Matrix& b)
+{
+	cout << "Expanded Matrix" << endl;
+
+	cout << "Matrix A" << endl;
+
+	a.printMatrix();
+	cout << "->" << endl;
+	a.printExpandedMatrix();
+	a.printDeterminant();
+
+	cout << endl << "Matrix B" << endl;
+
+	b.printMatrix();
+	cout << "->" << endl;
+	b.printExpandedMatrix();
+	a.printDeterminant();
 }
