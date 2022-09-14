@@ -1,6 +1,7 @@
 #include <iostream>
-#include <istream>
+#include <fstream>
 #include <conio.h>
+#include <sstream>
 
 using namespace std;
 
@@ -8,14 +9,24 @@ void help();
 
 int main()
 {
+	char key{};
+	string str{};
 
+	cout << "Input the file's name: ";
+	cin >> str;
 
-	help();
+	ifstream myFile{ str };
+
+	while (!myFile.is_open())
+	{
+		cout << "The file is not exist. Input the file's name: ";
+		cin >> str;
+		myFile.open(str);
+	}
 
 	while (true)
 	{
-		char key{};
-
+		help();
 		cout << "Input command";
 		key = _getch();
 
