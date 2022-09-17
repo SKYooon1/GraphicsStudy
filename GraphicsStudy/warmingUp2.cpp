@@ -6,6 +6,7 @@
 using namespace std;
 
 void readFile(ifstream& in, string& str);
+int countWord(const string& str);
 void help()
 {
 	cout << "명령어 설명" << endl;
@@ -23,8 +24,11 @@ int main()
 	char key{};
 	string str{};
 	ifstream in{};
+	int count{};
 
 	readFile(in, str);
+
+	cout << "word count: " << countWord(str) << endl;
 
 	while (true)
 	{
@@ -73,4 +77,13 @@ void readFile(ifstream& in, string& str)
 	in.read(&str[0], size);
 
 	cout << endl << str << endl << endl;
+}
+
+int countWord(const string& str)
+{
+	int count{};
+
+
+
+	return count;
 }
