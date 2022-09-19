@@ -1,12 +1,14 @@
 #include <iostream>
 #include <fstream>
 #include <conio.h>
-#include <sstream>
+#include <vector>
+#include <string>
 
 using namespace std;
 
-void readFile(ifstream& in, string& str);
-int countWord(const string& str);
+void readFile(ifstream& in, string& fileName, vector<string>& strings);
+void countWord(const vector<string>& strings, int& wordCount, int& numberCount);
+bool isNumeric(std::string const& str);
 void help()
 {
 	cout << "명령어 설명" << endl;
@@ -22,13 +24,18 @@ void help()
 int main()
 {
 	char key{};
-	string str{};
+	string fileName{};
 	ifstream in{};
-	int count{};
+	int wordCount{};
+	int numberCount{};
+	vector<string> strings{ 10, " " };
 
-	readFile(in, str);
+	readFile(in, fileName, strings);
 
-	cout << "word count: " << countWord(str) << endl;
+
+
+	cout << "word count: " << wordCount << endl;
+	cout << "number count: " << numberCount << endl << endl;
 
 	while (true)
 	{
@@ -52,38 +59,50 @@ int main()
 	}
 }
 
-void readFile(ifstream& in, string& str)
+void readFile(ifstream& in, string& fileName, vector<string>& strings)
 {
 	cout << "Input the file's name: ";
-	cin >> str;
+	cin >> fileName;
 
-	in.open(str);
+	in.open(fileName);
 
 	while (!in.is_open())
 	{
 		cout << "The file is not exist. Input the file's name: ";
-		cin >> str;
-		in.open(str);
+		cin >> fileName;
+		in.open(fileName);
 	}
 
-	in.seekg(0, std::ios::end);
+	for (int i{}; i < 10; ++i) {
+		getline(in, strings.at(i));
+	}
 
-	const int size = in.tellg();
+	cout << endl;
 
-	in.seekg(0, std::ios::beg);
+	for (const string& str : strings)
+		cout << str << endl;
 
-	str.resize(size);
-
-	in.read(&str[0], size);
-
-	cout << endl << str << endl << endl;
+	cout << endl;
 }
 
-int countWord(const string& str)
+void countWord(const vector<string>& strings, int& wordCount, int& numberCount)
 {
-	int count{};
+	for (string str : strings)
+	{
+		string s = str.substr(str.find(' '));
+		if (isNumeric(s))
+			++numberCount;
+		else ++wordCount;
+		str.erase(0, str.find(' '));
 
+	}
+}
 
-
-	return count;
+bool isNumeric(std::string const& str)
+{
+	string::const_iterator it = str.begin();
+	while (it != str.end() && std::isdigit(*it))
+		++it;
+	
+	return !str.empty() && it == str.end();
 }
