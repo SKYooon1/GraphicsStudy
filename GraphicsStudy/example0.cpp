@@ -30,20 +30,20 @@ void main(int argc, char** argv)
 	}
 	else std::cout << "GLEW initialized" << std::endl;
 
-	glutDisplayFunc(drawScene);	// 출력 함수 지정
-	glutReshapeFunc(reshape);	// 다시 그리기 함수 지정
-	glutMainLoop();				// 이벤트 처리 시작
+	glutDisplayFunc(drawScene);		// 출력 함수 지정
+	glutReshapeFunc(reshape);		// 다시 그리기 함수 지정
+	glutMainLoop();					// 이벤트 처리 시작
 
 }
 
 GLvoid drawScene(GLvoid)
 {
 	glClearColor(0.0f, 0.0f, 1.0f, 1.0f);	// 바탕색 지정
-	glClear(GL_COLOR_BUFFER_BIT);	// 설정된 색으로 전체 칠하기
+	glClear(GL_COLOR_BUFFER_BIT);							// 설정된 색으로 전체 칠하기
 
 	// 그리기 구현할 부분
 
-	glutSwapBuffers();	// 화면에 출력
+	glutSwapBuffers();		// 화면에 출력
 }
 
 GLvoid reshape(int w, int h)
