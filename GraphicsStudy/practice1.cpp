@@ -2,11 +2,16 @@
 #include <gl/freeglut.h>
 #include <gl/freeglut_ext.h>
 #include <iostream>
+#include <random>
+
+#define WINDOW_NAME "practice1"
 
 GLvoid drawScene(GLvoid);							// 그리기 콜백함수
 GLvoid reshape(int w, int h);						// 다시 그리기 콜백 함수
 GLvoid keyboard(unsigned char key, int x, int y);	// 키보드 콜백 함수
 GLvoid timer(int value);
+
+float red{ 1 }, green{ 1 }, blue{ 1 }, alpha{ 1 };
 
 void main(int argc, char** argv)
 {
@@ -15,7 +20,7 @@ void main(int argc, char** argv)
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);	// 디스플레이 모드 설정
 	glutInitWindowPosition(100, 100);			// 윈도우의 위치 설정
 	glutInitWindowSize(800, 600);		// 윈도우의 크기 지정
-	glutCreateWindow("Example0");				// 윈도우 생성("윈도우 이름")
+	glutCreateWindow(WINDOW_NAME);				// 윈도우 생성("윈도우 이름")
 
 	// GLEW 초기화
 	glewExperimental = GL_TRUE;
@@ -36,7 +41,7 @@ void main(int argc, char** argv)
 
 GLvoid drawScene(GLvoid)
 {
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);	// 바탕색 지정
+	glClearColor(red, green, blue, alpha);	// 바탕색 지정
 	glClear(GL_COLOR_BUFFER_BIT);							// 설정된 색으로 전체 칠하기
 
 	// 그리기 구현할 부분
@@ -54,22 +59,22 @@ GLvoid keyboard(unsigned char key, int x, int y)
 	switch (key)
 	{
 	case 'r': case 'R':
-		// 빨간색
+		red = 1; green = 0; blue = 0;	// 빨간색
 		break;
 	case 'g': case 'G':
-		// 초록색
+		red = 0; green = 1; blue = 0;	// 초록색
 		break;
 	case 'b': case 'B':
-		// 파란색
+		red = 0; green = 0; blue = 1;	// 파란색
 		break;
 	case 'a': case 'A':
 		// 랜덤색
 		break;
 	case 'w': case 'W':
-		// 하얀색
+		red = 1; green = 1; blue = 1;	// 하얀색
 		break;
 	case 'k': case 'K':
-		// 검은색
+		red = 0; green = 0; blue = 0;	// 검은색
 		break;
 	case 't': case 'T':
 		// 타이머 설정. 특정 시간마다 랜덤색으로 바뀐다.
@@ -78,11 +83,12 @@ GLvoid keyboard(unsigned char key, int x, int y)
 		// 타이머 종료
 		break;
 	case 'q': case 'Q':
-		// 프로그램 종료
+		glutLeaveMainLoop();	// 프로그램 종료
 		break;
 	default:
 		break;
 	}
+	glutPostRedisplay();
 }
 
 GLvoid timer(int value)
