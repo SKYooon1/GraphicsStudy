@@ -15,6 +15,8 @@ GLvoid reshape(int w, int h);						// 다시 그리기 콜백 함수
 GLvoid keyboard(unsigned char key, int x, int y);	// 키보드 콜백 함수
 GLvoid mouse(int button, int state, int x, int y);
 
+void convertCoordinateWinToGl(const int x, const int y, float& ox, float& oy);
+
 static float red{ 1 }, green{ 1 }, blue{ 1 };
 static float boxRed{}, boxGreen{}, boxBlue{};
 static float boxWidth{0.25}, boxHeight{0.25};
@@ -80,11 +82,8 @@ GLvoid keyboard(unsigned char key, int x, int y)
 
 GLvoid mouse(int button, int state, int x, int y)
 {
-	constexpr float w{ WINDOW_WIDTH };
-	constexpr float h{ WINDOW_HEIGHT };
-	const float ox{ (static_cast<float>(x) - (w / 2.0f)) * (1.0f / (w / 2.0f)) };
-	const float oy{ -(static_cast<float>(y) - (h / 2.0f)) * (1.0f / (h / 2.0f)) };
-
+	float ox{}, oy{};
+	convertCoordinateWinToGl(x, y, ox, oy);
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
 	{
 		if (ox >= -boxWidth && ox <= boxWidth && oy >= -boxHeight && oy <= boxHeight)
@@ -114,4 +113,12 @@ GLvoid mouse(int button, int state, int x, int y)
 		}
 	}
 	glutPostRedisplay();
+}
+
+void convertCoordinateWinToGl(const int x, const int y, float& ox, float& oy)
+{
+	constexpr float w{ WINDOW_WIDTH };
+	constexpr float h{ WINDOW_HEIGHT };
+	ox = { (static_cast<float>(x) - (w / 2.0f)) * (1.0f / (w / 2.0f)) };
+	oy = { -(static_cast<float>(y) - (h / 2.0f)) * (1.0f / (h / 2.0f)) };
 }
