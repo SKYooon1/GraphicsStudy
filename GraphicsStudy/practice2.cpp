@@ -13,10 +13,10 @@
 GLvoid drawScene(GLvoid);							// 그리기 콜백함수
 GLvoid reshape(int w, int h);						// 다시 그리기 콜백 함수
 GLvoid keyboard(unsigned char key, int x, int y);	// 키보드 콜백 함수
-GLvoid timer(int value);
 GLvoid mouse(int button, int state, int x, int y);
 
-static float red{ 1 }, green{ 1 }, blue{ 1 }, alpha{ 1 };
+static float red{ 1 }, green{ 1 }, blue{ 1 };
+static float boxRed{}, boxGreen{}, boxBlue{};
 static std::random_device rd;
 static std::mt19937 gen(rd());
 static std::uniform_real_distribution<float> urd(0, 1);
@@ -50,10 +50,10 @@ void main(int argc, char** argv)
 
 GLvoid drawScene(GLvoid)
 {
-	glClearColor(red, green, blue, alpha);	// 바탕색 지정
+	glClearColor(red, green, blue, 1.0f);	// 바탕색 지정
 	glClear(GL_COLOR_BUFFER_BIT);							// 설정된 색으로 전체 칠하기
 
-	glColor3f(0, 0, 0);
+	glColor3f(boxRed, boxGreen, boxBlue);
 	glRectf(-0.5, -0.5, 0.5, 0.5);
 
 	glutSwapBuffers();		// 화면에 출력
@@ -77,17 +77,27 @@ GLvoid keyboard(unsigned char key, int x, int y)
 	glutPostRedisplay();
 }
 
-GLvoid timer(int value)
-{
-	if (isTimer)
-	{
-		red = urd(gen); green = urd(gen); blue = urd(gen);
-		glutTimerFunc(1, timer, 1);
-	}
-	glutPostRedisplay();
-}
-
 GLvoid mouse(int button, int state, int x, int y)
 {
+	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
+	{
+		constexpr float w{ WINDOW_WIDTH };
+		constexpr float h{ WINDOW_HEIGHT };
+		const float ox{ (static_cast<float>(x) - (w / 2.0f)) * (1.0f / (w / 2.0f)) };
+		const float oy{ -(static_cast<float>(y) - (h / 2.0f)) * (1.0f / (h / 2.0f)) };
 
+		if (ox >= -0.5f && ox <= 0.5f && oy >= -0.5f && oy <= 0.5f)	// 상자 안 색 변화
+		{
+			boxRed = urd(gen);
+			boxGreen = urd(gen);
+			boxBlue = urd(gen);
+		}
+		else	// 상자 밖 색 변화
+		{
+			red = urd(gen);
+			green = urd(gen);
+			blue = urd(gen);
+		}
+		glutPostRedisplay();
+	}
 }
