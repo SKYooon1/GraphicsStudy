@@ -11,7 +11,11 @@ GLvoid reshape(int w, int h);						// 다시 그리기 콜백 함수
 GLvoid keyboard(unsigned char key, int x, int y);	// 키보드 콜백 함수
 GLvoid timer(int value);
 
-float red{ 1 }, green{ 1 }, blue{ 1 }, alpha{ 1 };
+static float red{ 1 }, green{ 1 }, blue{ 1 }, alpha{ 1 };
+static std::random_device rd;
+static std::mt19937 gen(rd());
+static std::uniform_real_distribution<float> urd(0, 1);
+bool isTimer{};
 
 void main(int argc, char** argv)
 {
@@ -34,7 +38,6 @@ void main(int argc, char** argv)
 	glutDisplayFunc(drawScene);		// 출력 함수 지정
 	glutReshapeFunc(reshape);		// 다시 그리기 함수 지정
 	glutKeyboardFunc(keyboard);
-	glutTimerFunc(100, timer, 1);
 
 	glutMainLoop();					// 이벤트 처리 시작
 }
@@ -58,32 +61,33 @@ GLvoid keyboard(unsigned char key, int x, int y)
 {
 	switch (key)
 	{
-	case 'r': case 'R':
-		red = 1; green = 0; blue = 0;	// 빨간색
+	case 'r': case 'R':		// 빨간색
+		red = 1; green = 0; blue = 0;
 		break;
-	case 'g': case 'G':
-		red = 0; green = 1; blue = 0;	// 초록색
+	case 'g': case 'G':		// 초록색
+		red = 0; green = 1; blue = 0;
 		break;
-	case 'b': case 'B':
-		red = 0; green = 0; blue = 1;	// 파란색
+	case 'b': case 'B':		// 파란색
+		red = 0; green = 0; blue = 1;
 		break;
-	case 'a': case 'A':
-		// 랜덤색
+	case 'a': case 'A':		// 랜덤색
+		red = urd(gen); green = urd(gen); blue = urd(gen);
 		break;
-	case 'w': case 'W':
-		red = 1; green = 1; blue = 1;	// 하얀색
+	case 'w': case 'W':		// 하얀색
+		red = 1; green = 1; blue = 1;
 		break;
-	case 'k': case 'K':
-		red = 0; green = 0; blue = 0;	// 검은색
+	case 'k': case 'K':		// 검은색
+		red = 0; green = 0; blue = 0;
 		break;
-	case 't': case 'T':
-		// 타이머 설정. 특정 시간마다 랜덤색으로 바뀐다.
+	case 't': case 'T':		// 타이머 설정. 특정 시간마다 랜덤색으로 바뀐다.
+		isTimer = true;
+		glutTimerFunc(100, timer, 1);
 		break;
-	case 's': case 'S':
-		// 타이머 종료
+	case 's': case 'S':		// 타이머 종료
+		isTimer = false;
 		break;
-	case 'q': case 'Q':
-		glutLeaveMainLoop();	// 프로그램 종료
+	case VK_ESCAPE: case 'q': case 'Q':		// 프로그램 종료
+		glutLeaveMainLoop();
 		break;
 	default:
 		break;
@@ -93,5 +97,10 @@ GLvoid keyboard(unsigned char key, int x, int y)
 
 GLvoid timer(int value)
 {
-
+	if (isTimer)
+	{
+		red = urd(gen); green = urd(gen); blue = urd(gen);
+		glutTimerFunc(1, timer, 1);
+	}
+	glutPostRedisplay();
 }
