@@ -9,7 +9,7 @@
 GLvoid drawScene(GLvoid);							// 그리기 콜백함수
 GLvoid reshape(int w, int h);						// 다시 그리기 콜백 함수
 GLvoid keyboard(unsigned char key, int x, int y);	// 키보드 콜백 함수
-GLvoid timer(int value);
+GLvoid timer(int value);							// 타이머 콜백 함수
 
 static float red{ 1 }, green{ 1 }, blue{ 1 }, alpha{ 1 };
 static std::random_device rd;
@@ -79,12 +79,9 @@ GLvoid keyboard(unsigned char key, int x, int y)
 	case 'k': case 'K':		// 검은색
 		red = 0; green = 0; blue = 0;
 		break;
-	case 't': case 'T':		// 타이머 설정. 특정 시간마다 랜덤색으로 바뀐다.
-		isTimer = true;
+	case 't': case 'T':		// 타이머 시작/종료. 특정 시간마다 랜덤색으로 바뀐다.
+		isTimer = !isTimer;
 		glutTimerFunc(100, timer, 1);
-		break;
-	case 's': case 'S':		// 타이머 종료
-		isTimer = false;
 		break;
 	case VK_ESCAPE: case 'q': case 'Q':		// 프로그램 종료
 		glutLeaveMainLoop();
@@ -100,7 +97,7 @@ GLvoid timer(int value)
 	if (isTimer)
 	{
 		red = urd(gen); green = urd(gen); blue = urd(gen);
-		glutTimerFunc(1, timer, 1);
+		glutTimerFunc(100, timer, 1);
 	}
 	glutPostRedisplay();
 }
