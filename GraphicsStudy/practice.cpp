@@ -8,18 +8,21 @@
 #define WINDOW_POS_X 100
 #define WINDOW_POS_Y 100
 
-GLvoid drawScene(GLvoid);							// 그리기 콜백함수
-GLvoid reshape(int w, int h);						// 다시 그리기 콜백 함수
-GLvoid keyboard(unsigned char key, int x, int y);	// 키보드 콜백 함수
+GLvoid drawScene(GLvoid);								// 그리기 콜백함수
+GLvoid reshape(int w, int h);							// 다시 그리기 콜백 함수
+GLvoid keyboard(unsigned char key, int x, int y);		// 키보드 콜백 함수
 GLvoid mouseClick(int button, int state, int x, int y);	// 마우스 클릭 콜백 함수
-GLvoid mouseDrag(int x, int y);						// 마우스 드래그 콜백 함수
+GLvoid mouseDrag(int x, int y);							// 마우스 드래그 콜백 함수
 
-void convertCoordinateWinToGl(const int x, const int y, float& ox, float& oy);
+void convertCoordWinToGl(const int x, const int y, float& ox, float& oy);
+void convertCoordGlToWin(const float x, const float y, int& ox, int& oy);
 
 static int windowWidth{ 800 };
 static int windowHeight{ 600 };
 
 static float bgRed{ 1 }, bgGreen{ 1 }, bgBlue{ 1 };
+static bool leftButton{};
+static int count{};
 
 static std::random_device rd;
 static std::mt19937 gen(rd());
@@ -28,57 +31,60 @@ static std::uniform_real_distribution<float> urd(0, 1);
 class Box
 {
 private:
-	float left, top, right, bottom;	// pos
-	float width, height;			// size
-	float red, green, blue;			// rgb
+	float x_, y_;					// pos
+	float width_, height_;			// size
+	float red_, green_, blue_;		// rgb
 public:
-
-	Box() : width{ 0.25 }, height{ 0.25 },
-		red{ urd(gen) }, green{ urd(gen) }, blue{ urd(gen) }
+	Box() : x_{}, y_{}, width_{ 0.25 }, height_{ 0.25 },
+		red_{ urd(gen) }, green_{ urd(gen) }, blue_{ urd(gen) }
 	{}
 
-	float getWidth()	const { return width; }
-	float getHeight()	const { return height; }
-	float getRed()		const { return red; }
-	float getGreen()	const { return green; }
-	float getBlue()		const { return blue; }
-	float getLeft()		const { return left; }
-	float getTop()		const { return top; }
-	float getRight()	const { return right; }
-	float getBottom()	const { return bottom; }
+	bool isPtInBox(const float& x, const float& y)	const
+	{
+		if (x >= x_ - width_ && y <= y_ + height_ &&
+			x <= x_ + width_ && y >= y_ - height_)
+			return true;
+		else return false;
+	}
+	
+	float getWidth()	const { return width_; }
+	float getHeight()	const { return height_; }
+	float getRed()		const { return red_; }
+	float getGreen()	const { return green_; }
+	float getBlue()		const { return blue_; }
+	float getX()		const { return x_; }
+	float getY()		const { return y_; }
+	float getLeft()		const { return x_ - width_; }
+	float getTop()		const { return y_ + height_; }
+	float getRight()	const { return x_ + width_; }
+	float getBottom()	const { return y_ - height_; }
 
 	void setSize(const float w, const float h)
 	{
-		width = w; height = h;
-	}
-	void setPos(const float l, const float t, const float r, const float b)
-	{
-		left = l; top = t; right = r; bottom = b;
+		width_ = w; height_ = h;
 	}
 	void setPos(const float x, const float y)
 	{
-		left = x - width / 2;
-		top = y + height / 2;
-		right = x + width / 2;
-		bottom = y - height / 2;
+		x_ = x;
+		y_ = y;
 	}
 	void setRgb(const float r, const float g, const float b)
 	{
-		red = r; green = g; blue = b;
+		red_ = r; green_ = g; blue_ = b;
 	}
 
 };
 
-Box rectangle[5]{};
+static Box rectangles[5]{};
 
 void main(int argc, char** argv)
 {
 	// 윈도우 생성
-	glutInit(&argc, argv);							// glut 초기화
+	glutInit(&argc, argv);	// glut 초기화
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);	// 디스플레이 모드 설정
 	glutInitWindowPosition(WINDOW_POS_X, WINDOW_POS_Y);	// 윈도우의 위치 설정
 	glutInitWindowSize(windowWidth, windowHeight);	// 윈도우의 크기 지정
-	glutCreateWindow(WINDOW_NAME);			// 윈도우 생성("윈도우 이름")
+	glutCreateWindow(WINDOW_NAME);	// 윈도우 생성("윈도우 이름")
 
 	// GLEW 초기화
 	glewExperimental = GL_TRUE;
@@ -103,10 +109,12 @@ GLvoid drawScene(GLvoid)
 	glClearColor(bgRed, bgGreen, bgBlue, 1.0f);	// 바탕색 지정
 	glClear(GL_COLOR_BUFFER_BIT);			// 설정된 색으로 전체 칠하기
 
-	glColor3f(rectangle[0].getRed(), rectangle[0].getGreen(), rectangle[0].getBlue());
-	glRectf(-rectangle[0].getWidth(), -rectangle[0].getHeight(),
-		rectangle[0].getWidth(), rectangle[0].getHeight());
-
+	for (const Box& r : rectangles)
+	{
+		glColor3f(r.getRed(), r.getGreen(), r.getBlue());
+		glRectf(r.getLeft(), r.getTop(),
+			r.getRight(), r.getBottom());
+	}
 	glutSwapBuffers();		// 화면에 출력
 }
 
@@ -124,6 +132,12 @@ GLvoid keyboard(unsigned char key, int x, int y)
 	case VK_ESCAPE: case 'q': case 'Q':		// 프로그램 종료
 		glutLeaveMainLoop();
 		break;
+	case 'a': case 'A':
+		count++;
+		if (count == 5)
+			count = 0;
+		rectangles[count].setPos(0, 0);
+		break;
 	default:
 		break;
 	}
@@ -133,7 +147,10 @@ GLvoid keyboard(unsigned char key, int x, int y)
 GLvoid mouseClick(int button, int state, int x, int y)
 {
 	float ox{}, oy{};
-	convertCoordinateWinToGl(x, y, ox, oy);
+	convertCoordWinToGl(x, y, ox, oy);
+
+	if (button == GLUT_LEFT_BUTTON)
+		leftButton = true;
 	
 	glutPostRedisplay();
 }
@@ -141,14 +158,28 @@ GLvoid mouseClick(int button, int state, int x, int y)
 GLvoid mouseDrag(int x, int y)
 {
 	float ox{}, oy{};
-	convertCoordinateWinToGl(x, y, ox, oy);
+	convertCoordWinToGl(x, y, ox, oy);
 
+	for (Box& r : rectangles)
+	if (leftButton && r.isPtInBox(ox, oy))
+		r.setPos(ox, oy);
+
+	glutPostRedisplay();
 }
 
-void convertCoordinateWinToGl(const int x, const int y, float& ox, float& oy)
+void convertCoordWinToGl(const int x, const int y, float& ox, float& oy)
 {
 	const float w{ static_cast<float>(windowWidth) };
 	const float h{ static_cast<float>(windowHeight) };
 	ox = { (static_cast<float>(x) - (w / 2.0f)) * (1.0f / (w / 2.0f)) };
 	oy = { -(static_cast<float>(y) - (h / 2.0f)) * (1.0f / (h / 2.0f)) };
+}
+
+void convertCoordGlToWin(const float x, const float y, int& ox, int& oy)
+{
+	const int w{ windowWidth };
+	const int h{ windowHeight };
+	
+	ox = static_cast<int>((x + 1) / 2 * static_cast<float>(w));
+	oy = static_cast<int>(-(y + 1) / 2 * static_cast<float>(h));
 }
