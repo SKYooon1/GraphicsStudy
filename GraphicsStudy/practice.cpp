@@ -34,6 +34,7 @@ private:
 	float x_, y_;					// pos
 	float width_, height_;			// size
 	float red_, green_, blue_;		// rgb
+	bool isClicked_;
 public:
 	Box() : x_{}, y_{}, width_{ 0.25 }, height_{ 0.25 },
 		red_{ urd(gen) }, green_{ urd(gen) }, blue_{ urd(gen) }
@@ -46,7 +47,7 @@ public:
 			return true;
 		else return false;
 	}
-	
+
 	float getWidth()	const { return width_; }
 	float getHeight()	const { return height_; }
 	float getRed()		const { return red_; }
@@ -58,6 +59,7 @@ public:
 	float getTop()		const { return y_ + height_; }
 	float getRight()	const { return x_ + width_; }
 	float getBottom()	const { return y_ - height_; }
+	bool isClicked()	const { return isClicked_; }
 
 	void setSize(const float w, const float h)
 	{
@@ -72,6 +74,7 @@ public:
 	{
 		red_ = r; green_ = g; blue_ = b;
 	}
+	void setClicked(const bool isClicked) { isClicked_ = isClicked; }
 
 };
 
@@ -133,10 +136,10 @@ GLvoid keyboard(unsigned char key, int x, int y)
 		glutLeaveMainLoop();
 		break;
 	case 'a': case 'A':
+		rectangles[count].setPos(0, 0);
 		count++;
 		if (count == 5)
 			count = 0;
-		rectangles[count].setPos(0, 0);
 		break;
 	default:
 		break;
@@ -149,8 +152,10 @@ GLvoid mouseClick(int button, int state, int x, int y)
 	float ox{}, oy{};
 	convertCoordWinToGl(x, y, ox, oy);
 
-	if (button == GLUT_LEFT_BUTTON)
-		leftButton = true;
+	for (Box& r : rectangles)
+		if (button == GLUT_LEFT_BUTTON && r.isPtInBox(ox, oy))
+			r.setClicked(true);
+		else r.setClicked(false);
 	
 	glutPostRedisplay();
 }
@@ -161,8 +166,8 @@ GLvoid mouseDrag(int x, int y)
 	convertCoordWinToGl(x, y, ox, oy);
 
 	for (Box& r : rectangles)
-	if (leftButton && r.isPtInBox(ox, oy))
-		r.setPos(ox, oy);
+		if (r.isClicked() && r.isPtInBox(ox, oy))
+			r.setPos(ox, oy);
 
 	glutPostRedisplay();
 }
