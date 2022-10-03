@@ -55,6 +55,14 @@ public:
 		else return false;
 	}
 
+	void reset()
+	{
+		ox_ = {}; oy_ = {};
+		x_ = ox_; y_ = oy_;
+		width_ = 0.1f; height_ = 0.1f;
+		
+	}
+
 	float getOriginalX()	const { return ox_; }
 	float getOriginalY()	const { return oy_; }
 	float getWidth()		const { return width_; }
