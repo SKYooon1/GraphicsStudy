@@ -4,7 +4,7 @@
 #include <iostream>
 #include <random>
 
-#define WINDOW_NAME "practice3"
+#define WINDOW_NAME "practice4"
 #define WINDOW_POS_X 100
 #define WINDOW_POS_Y 100
 
@@ -20,8 +20,7 @@ void convertCoordGlToWin(const float x, const float y, int& ox, int& oy);
 static int windowWidth{ 800 };
 static int windowHeight{ 600 };
 
-static float bgRed{ 1 }, bgGreen{ 1 }, bgBlue{ 1 };
-static bool leftButton{};
+static float bgRed{ 0.1f }, bgGreen{ 0.1f }, bgBlue{ 0.1f };
 static int count{};
 
 static std::random_device rd;
@@ -31,12 +30,12 @@ static std::uniform_real_distribution<float> urd(0, 1);
 class Box
 {
 private:
+	bool isPrinted_;				// is printed
 	float x_, y_;					// pos
 	float width_, height_;			// size
 	float red_, green_, blue_;		// rgb
-	bool isClicked_;
 public:
-	Box() : x_{}, y_{}, width_{ 0.25 }, height_{ 0.25 },
+	Box() : isPrinted_{}, x_{}, y_{}, width_{ 0.1f }, height_{ 0.1f },
 		red_{ urd(gen) }, green_{ urd(gen) }, blue_{ urd(gen) }
 	{}
 
@@ -59,7 +58,7 @@ public:
 	float getTop()		const { return y_ + height_; }
 	float getRight()	const { return x_ + width_; }
 	float getBottom()	const { return y_ - height_; }
-	bool isClicked()	const { return isClicked_; }
+	bool isPrinted()	const { return isPrinted_; }
 
 	void setSize(const float w, const float h)
 	{
@@ -74,7 +73,7 @@ public:
 	{
 		red_ = r; green_ = g; blue_ = b;
 	}
-	void setClicked(const bool isClicked) { isClicked_ = isClicked; }
+	void setPrinted(const bool isPrinted) { isPrinted_ = isPrinted; }
 
 };
 
@@ -97,7 +96,7 @@ void main(int argc, char** argv)
 		exit(EXIT_FAILURE);
 	}
 	else std::cout << "GLEW initialized" << std::endl;
-
+	
 	glutDisplayFunc(drawScene);		// 출력 함수 지정
 	glutReshapeFunc(reshape);		// 다시 그리기 함수 지정
 	glutKeyboardFunc(keyboard);
@@ -111,13 +110,14 @@ GLvoid drawScene(GLvoid)
 {
 	glClearColor(bgRed, bgGreen, bgBlue, 1.0f);	// 바탕색 지정
 	glClear(GL_COLOR_BUFFER_BIT);			// 설정된 색으로 전체 칠하기
-
+	
 	for (const Box& r : rectangles)
-	{
-		glColor3f(r.getRed(), r.getGreen(), r.getBlue());
-		glRectf(r.getLeft(), r.getTop(),
-			r.getRight(), r.getBottom());
-	}
+		if (r.isPrinted())
+		{
+			glColor3f(r.getRed(), r.getGreen(), r.getBlue());
+			glRectf(r.getLeft(), r.getTop(),
+				r.getRight(), r.getBottom());
+		}
 	glutSwapBuffers();		// 화면에 출력
 }
 
@@ -152,11 +152,15 @@ GLvoid mouseClick(int button, int state, int x, int y)
 	float ox{}, oy{};
 	convertCoordWinToGl(x, y, ox, oy);
 
-	for (Box& r : rectangles)
-		if (button == GLUT_LEFT_BUTTON && r.isPtInBox(ox, oy))
-			r.setClicked(true);
-		else r.setClicked(false);
-	
+	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
+	{
+		rectangles[count].setPrinted(true);
+		rectangles[count].setPos(ox, oy);
+		count++;
+		if (count == 5)
+			count = 0;
+	}
+
 	glutPostRedisplay();
 }
 
@@ -164,11 +168,7 @@ GLvoid mouseDrag(int x, int y)
 {
 	float ox{}, oy{};
 	convertCoordWinToGl(x, y, ox, oy);
-
-	for (Box& r : rectangles)
-		if (r.isClicked() && r.isPtInBox(ox, oy))
-			r.setPos(ox, oy);
-
+	
 	glutPostRedisplay();
 }
 
