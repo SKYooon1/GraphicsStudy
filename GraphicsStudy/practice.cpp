@@ -23,6 +23,7 @@ static int windowHeight{ 600 };
 
 static float bgRed{ 0.1f }, bgGreen{ 0.1f }, bgBlue{ 0.1f };
 static int count{};
+static bool changeSize{};
 
 static std::random_device rd;
 static std::mt19937 gen(rd());
@@ -31,17 +32,19 @@ static std::uniform_real_distribution<float> urd(0, 1);
 class Box
 {
 private:
+	float ox_, oy_;					// original pos
 	float x_, y_;					// pos
 	float width_, height_;			// size
 	float red_, green_, blue_;		// rgb
 	float velocityX_, velocityY_;	// velocity
 	bool isPrinted_;				// is printed
+	bool sizeChanged_;				// size up or down
 	char moveHow_;					// How to move
 public:
 	Box() : x_{}, y_{}, width_{ 0.1f }, height_{ 0.1f },
 		red_{ urd(gen) }, green_{ urd(gen) }, blue_{ urd(gen) },
 		velocityX_{ width_ * urd(gen) / 10 }, velocityY_{ height_ * urd(gen) / 10 },
-		isPrinted_{}, moveHow_{}
+		isPrinted_{}, sizeChanged_{ true }, moveHow_{}
 	{}
 
 	bool isPtInBox(const float& x, const float& y)	const
@@ -52,6 +55,8 @@ public:
 		else return false;
 	}
 
+	float getOriginalX()	const { return ox_; }
+	float getOriginalY()	const { return oy_; }
 	float getWidth()		const { return width_; }
 	float getHeight()		const { return height_; }
 	float getRed()			const { return red_; }
@@ -65,12 +70,16 @@ public:
 	float getBottom()		const { return y_ - height_; }
 	float getVelocityX()	const { return velocityX_; }
 	float getVelocityY()	const { return velocityY_; }
-	bool isPrinted()		const { return isPrinted_; }
+	bool getPrinted()		const { return isPrinted_; }
+	bool getSizeChange()	const { return sizeChanged_; }
 	char getMoveHow()		const { return moveHow_; }
 
-	void setSize(const float w, const float h)
+	void setOriginalPos(const float x, const float y)
 	{
-		width_ = w; height_ = h;
+		ox_ = x;
+		oy_ = y;
+		x_ = ox_;
+		y_ = oy_;
 	}
 	void setPos(const float x, const float y)
 	{
@@ -105,6 +114,10 @@ public:
 			}
 		}
 	}
+	void setSize(const float w, const float h)
+	{
+		width_ = w; height_ = h;
+	}
 	void setRgb(const float r, const float g, const float b)
 	{
 		red_ = r; green_ = g; blue_ = b;
@@ -115,6 +128,8 @@ public:
 	void setVelocityY(const float velocity) { velocityY_ = velocity; }
 
 	void setPrinted(const bool isPrinted) { isPrinted_ = isPrinted; }
+
+	void setSizeChanged(const bool sizeChanged) { sizeChanged_ = sizeChanged; }
 
 	void setMoveHow(const char move) { moveHow_ = move; }
 
@@ -156,7 +171,7 @@ GLvoid drawScene(GLvoid)
 	glClear(GL_COLOR_BUFFER_BIT);			// 설정된 색으로 전체 칠하기
 	
 	for (const Box& r : rectangles)
-		if (r.isPrinted())
+		if (r.getPrinted())
 		{
 			glColor3f(r.getRed(), r.getGreen(), r.getBlue());
 			glRectf(r.getLeft(), r.getTop(),
@@ -191,6 +206,20 @@ GLvoid keyboard(unsigned char key, int x, int y)
 				r.setMoveHow('z');
 			else r.setMoveHow({});
 		break;
+	case 'c': case 'C':
+		changeSize = !changeSize;
+		break;
+	case 's': case 'S':
+		for (Box& r : rectangles)
+			r.setMoveHow({});
+		break;
+	case 'm': case 'M':
+		for (Box& r : rectangles)
+			r.setPos(r.getOriginalX(), r.getOriginalY());
+		break;
+	case 'r': case 'R':
+
+		break;
 	default:
 		break;
 	}
@@ -205,7 +234,7 @@ GLvoid mouseClick(int button, int state, int x, int y)
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
 	{
 		rectangles[count].setPrinted(true);
-		rectangles[count].setPos(ox, oy);
+		rectangles[count].setOriginalPos(ox, oy);
 		count++;
 		if (count == 5)
 			count = 0;
@@ -224,7 +253,6 @@ GLvoid mouseDrag(int x, int y)
 
 GLvoid timer(int value)
 {
-	
 	for (Box& r : rectangles)
 	{
 		if (r.getMoveHow() == 'd')
@@ -232,7 +260,18 @@ GLvoid timer(int value)
 
 		if (r.getMoveHow() == 'z')
 			r.setPos(r.getX() + r.getVelocityX(), r.getY());
-		
+
+		if (changeSize)
+		{
+			if (r.getSizeChange())
+				r.setSize(r.getWidth() + 0.001f, r.getHeight() + 0.001f);
+			else r.setSize(r.getWidth() - 0.001f, r.getHeight() - 0.001f);
+			if (r.getWidth() >= 0.25f || r.getHeight() >= 0.25f)
+				r.setSizeChanged(false);
+			else if (r.getWidth() <= 0.05f || r.getHeight() <= 0.05f)
+				r.setSizeChanged(true);
+		}
+
 		glutPostRedisplay();
 	}
 
