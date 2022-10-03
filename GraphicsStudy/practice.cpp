@@ -23,7 +23,6 @@ static int windowHeight{ 600 };
 
 static float bgRed{ 0.1f }, bgGreen{ 0.1f }, bgBlue{ 0.1f };
 static int count{};
-static bool isMoved{};
 
 static std::random_device rd;
 static std::mt19937 gen(rd());
@@ -35,12 +34,14 @@ private:
 	float x_, y_;					// pos
 	float width_, height_;			// size
 	float red_, green_, blue_;		// rgb
-	bool isPrinted_;				// is printed
 	float velocityX_, velocityY_;	// velocity
+	bool isPrinted_;				// is printed
+	char moveHow_;					// How to move
 public:
 	Box() : x_{}, y_{}, width_{ 0.1f }, height_{ 0.1f },
 		red_{ urd(gen) }, green_{ urd(gen) }, blue_{ urd(gen) },
-		isPrinted_{}, velocityX_{ width_ * urd(gen) / 10 }, velocityY_{ height_ * urd(gen) / 10 }
+		velocityX_{ width_ * urd(gen) / 10 }, velocityY_{ height_ * urd(gen) / 10 },
+		isPrinted_{}, moveHow_{}
 	{}
 
 	bool isPtInBox(const float& x, const float& y)	const
@@ -51,20 +52,21 @@ public:
 		else return false;
 	}
 
-	float getWidth()	const { return width_; }
-	float getHeight()	const { return height_; }
-	float getRed()		const { return red_; }
-	float getGreen()	const { return green_; }
-	float getBlue()		const { return blue_; }
-	float getX()		const { return x_; }
-	float getY()		const { return y_; }
-	float getLeft()		const { return x_ - width_; }
-	float getTop()		const { return y_ + height_; }
-	float getRight()	const { return x_ + width_; }
-	float getBottom()	const { return y_ - height_; }
-	bool isPrinted()	const { return isPrinted_; }
+	float getWidth()		const { return width_; }
+	float getHeight()		const { return height_; }
+	float getRed()			const { return red_; }
+	float getGreen()		const { return green_; }
+	float getBlue()			const { return blue_; }
+	float getX()			const { return x_; }
+	float getY()			const { return y_; }
+	float getLeft()			const { return x_ - width_; }
+	float getTop()			const { return y_ + height_; }
+	float getRight()		const { return x_ + width_; }
+	float getBottom()		const { return y_ - height_; }
 	float getVelocityX()	const { return velocityX_; }
 	float getVelocityY()	const { return velocityY_; }
+	bool isPrinted()		const { return isPrinted_; }
+	char getMoveHow()		const { return moveHow_; }
 
 	void setSize(const float w, const float h)
 	{
@@ -75,21 +77,46 @@ public:
 		x_ = x;
 		y_ = y;
 
-		if (x - width_ <= -1 || x + width_ >= 1)
-			velocityX_ = -velocityX_;
-		if (y - height_ <= -1 || y + height_ >= 1)
-			velocityY_ = -velocityY_;
+		if (moveHow_ == 'd')
+		{
+			if (x - width_ <= -1 || x + width_ >= 1)
+				velocityX_ = -velocityX_;
+			if (y - height_ <= -1 || y + height_ >= 1)
+				velocityY_ = -velocityY_;
+		}
+		else if (moveHow_ == 'z')
+		{
+			if (x - width_ <= -1 || x + width_ >= 1)
+			{
+				velocityX_ = -velocityX_;
+				if (velocityY_ >= 0)
+					y_ = y + height_;
+				else y_ = y - height_;
+			}
+			if (y - height_ <= -1)
+			{
+				y_ = y + height_;
+				velocityY_ = -velocityY_;
+			}
+			else if (y + height_ >= 1)
+			{
+				y_ = y - height_;
+				velocityY_ = -velocityY_;
+			}
+		}
 	}
 	void setRgb(const float r, const float g, const float b)
 	{
 		red_ = r; green_ = g; blue_ = b;
 	}
 
-	void setPrinted(const bool isPrinted) { isPrinted_ = isPrinted; }
-
 	void setVelocityX(const float velocity) { velocityX_ = velocity; }
 
 	void setVelocityY(const float velocity) { velocityY_ = velocity; }
+
+	void setPrinted(const bool isPrinted) { isPrinted_ = isPrinted; }
+
+	void setMoveHow(const char move) { moveHow_ = move; }
 
 };
 
@@ -153,7 +180,16 @@ GLvoid keyboard(unsigned char key, int x, int y)
 		glutLeaveMainLoop();
 		break;
 	case 'a': case 'A':
-		isMoved = !isMoved;
+		for (Box& r : rectangles)
+			if (r.getMoveHow() != 'd')
+				r.setMoveHow('d');
+			else r.setMoveHow({});
+		break;
+	case 'i': case 'I':
+		for (Box& r : rectangles)
+			if (r.getMoveHow() != 'z')
+				r.setMoveHow('z');
+			else r.setMoveHow({});
 		break;
 	default:
 		break;
@@ -188,13 +224,18 @@ GLvoid mouseDrag(int x, int y)
 
 GLvoid timer(int value)
 {
-	if (isMoved)
+	
+	for (Box& r : rectangles)
 	{
-		for (Box& r : rectangles)
+		if (r.getMoveHow() == 'd')
 			r.setPos(r.getX() + r.getVelocityX(), r.getY() + r.getVelocityY());
 
+		if (r.getMoveHow() == 'z')
+			r.setPos(r.getX() + r.getVelocityX(), r.getY());
+		
 		glutPostRedisplay();
 	}
+
 	glutTimerFunc(10, timer, 1);
 }
 
