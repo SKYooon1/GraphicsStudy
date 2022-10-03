@@ -13,6 +13,7 @@ GLvoid reshape(int w, int h);							// 다시 그리기 콜백 함수
 GLvoid keyboard(unsigned char key, int x, int y);		// 키보드 콜백 함수
 GLvoid mouseClick(int button, int state, int x, int y);	// 마우스 클릭 콜백 함수
 GLvoid mouseDrag(int x, int y);							// 마우스 드래그 콜백 함수
+GLvoid timer(int value);								// 타이머 콜백 함수
 
 void convertCoordWinToGl(const int x, const int y, float& ox, float& oy);
 void convertCoordGlToWin(const float x, const float y, int& ox, int& oy);
@@ -22,6 +23,7 @@ static int windowHeight{ 600 };
 
 static float bgRed{ 0.1f }, bgGreen{ 0.1f }, bgBlue{ 0.1f };
 static int count{};
+static bool isMoved{};
 
 static std::random_device rd;
 static std::mt19937 gen(rd());
@@ -30,13 +32,15 @@ static std::uniform_real_distribution<float> urd(0, 1);
 class Box
 {
 private:
-	bool isPrinted_;				// is printed
 	float x_, y_;					// pos
 	float width_, height_;			// size
 	float red_, green_, blue_;		// rgb
+	bool isPrinted_;				// is printed
+	float velocityX_, velocityY_;	// velocity
 public:
-	Box() : isPrinted_{}, x_{}, y_{}, width_{ 0.1f }, height_{ 0.1f },
-		red_{ urd(gen) }, green_{ urd(gen) }, blue_{ urd(gen) }
+	Box() : x_{}, y_{}, width_{ 0.1f }, height_{ 0.1f },
+		red_{ urd(gen) }, green_{ urd(gen) }, blue_{ urd(gen) },
+		isPrinted_{}, velocityX_{ width_ * urd(gen) / 10 }, velocityY_{ height_ * urd(gen) / 10 }
 	{}
 
 	bool isPtInBox(const float& x, const float& y)	const
@@ -59,6 +63,8 @@ public:
 	float getRight()	const { return x_ + width_; }
 	float getBottom()	const { return y_ - height_; }
 	bool isPrinted()	const { return isPrinted_; }
+	float getVelocityX()	const { return velocityX_; }
+	float getVelocityY()	const { return velocityY_; }
 
 	void setSize(const float w, const float h)
 	{
@@ -68,12 +74,22 @@ public:
 	{
 		x_ = x;
 		y_ = y;
+
+		if (x - width_ <= -1 || x + width_ >= 1)
+			velocityX_ = -velocityX_;
+		if (y - height_ <= -1 || y + height_ >= 1)
+			velocityY_ = -velocityY_;
 	}
 	void setRgb(const float r, const float g, const float b)
 	{
 		red_ = r; green_ = g; blue_ = b;
 	}
+
 	void setPrinted(const bool isPrinted) { isPrinted_ = isPrinted; }
+
+	void setVelocityX(const float velocity) { velocityX_ = velocity; }
+
+	void setVelocityY(const float velocity) { velocityY_ = velocity; }
 
 };
 
@@ -102,6 +118,7 @@ void main(int argc, char** argv)
 	glutKeyboardFunc(keyboard);
 	glutMouseFunc(mouseClick);
 	glutMotionFunc(mouseDrag);
+	glutTimerFunc(10, timer, 1);
 
 	glutMainLoop();					// 이벤트 처리 시작
 }
@@ -136,10 +153,7 @@ GLvoid keyboard(unsigned char key, int x, int y)
 		glutLeaveMainLoop();
 		break;
 	case 'a': case 'A':
-		rectangles[count].setPos(0, 0);
-		count++;
-		if (count == 5)
-			count = 0;
+		isMoved = !isMoved;
 		break;
 	default:
 		break;
@@ -170,6 +184,18 @@ GLvoid mouseDrag(int x, int y)
 	convertCoordWinToGl(x, y, ox, oy);
 	
 	glutPostRedisplay();
+}
+
+GLvoid timer(int value)
+{
+	if (isMoved)
+	{
+		for (Box& r : rectangles)
+			r.setPos(r.getX() + r.getVelocityX(), r.getY() + r.getVelocityY());
+
+		glutPostRedisplay();
+	}
+	glutTimerFunc(10, timer, 1);
 }
 
 void convertCoordWinToGl(const int x, const int y, float& ox, float& oy)
