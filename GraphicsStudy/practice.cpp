@@ -4,7 +4,7 @@
 #include <iostream>
 #include <random>
 
-#define WINDOW_NAME "practice4"
+#define WINDOW_NAME "practice5"
 #define WINDOW_POS_X 100
 #define WINDOW_POS_Y 100
 
@@ -21,9 +21,7 @@ void convertCoordGlToWin(const float x, const float y, int& ox, int& oy);
 static int windowWidth{ 800 };
 static int windowHeight{ 600 };
 
-static float bgRed{ 0.1f }, bgGreen{ 0.1f }, bgBlue{ 0.1f };
-static int count{};
-static bool changeSize{};
+static float bgRed{ 1 }, bgGreen{ 1 }, bgBlue{ 1 };
 
 static std::random_device rd;
 static std::mt19937 gen(rd());
@@ -32,19 +30,15 @@ static std::uniform_real_distribution<float> urd(0, 1);
 class Box
 {
 private:
-	float ox_, oy_;					// original pos
 	float x_, y_;					// pos
 	float width_, height_;			// size
 	float red_, green_, blue_;		// rgb
-	float velocityX_, velocityY_;	// velocity
 	bool isPrinted_;				// is printed
-	bool sizeChanged_;				// size up or down
-	char moveHow_;					// How to move
 public:
-	Box() : x_{}, y_{}, width_{ 0.1f }, height_{ 0.1f },
+	Box() : x_{ -1 + urd(gen) + urd(gen) }, y_{ -1 + urd(gen) + urd(gen)},
+		width_{0.01f}, height_{0.01f},
 		red_{ urd(gen) }, green_{ urd(gen) }, blue_{ urd(gen) },
-		velocityX_{ width_ * urd(gen) / 10 }, velocityY_{ height_ * urd(gen) / 10 },
-		isPrinted_{}, sizeChanged_{ true }, moveHow_{}
+		isPrinted_{true}
 	{}
 
 	bool isPtInBox(const float& x, const float& y)	const
@@ -57,18 +51,12 @@ public:
 
 	void reset()
 	{
-		setOriginalPos(0, 0);
-		setSize(0.1f, 0.1f);
+		setPos(-1 + urd(gen) + urd(gen), -1 + urd(gen) + urd(gen));
+		setSize(0.01f, 0.01f);
 		setRgb(urd(gen), urd(gen), urd(gen));
-		setVelocityX(width_ * urd(gen) / 10);
-		setVelocityY(height_ * urd(gen) / 10);
-		setPrinted(false);
-		setSizeChanged(false);
-		setMoveHow(false);
+		setPrinted(true);
 	}
-
-	float getOriginalX()	const { return ox_; }
-	float getOriginalY()	const { return oy_; }
+	
 	float getWidth()		const { return width_; }
 	float getHeight()		const { return height_; }
 	float getRed()			const { return red_; }
@@ -80,51 +68,12 @@ public:
 	float getTop()			const { return y_ + height_; }
 	float getRight()		const { return x_ + width_; }
 	float getBottom()		const { return y_ - height_; }
-	float getVelocityX()	const { return velocityX_; }
-	float getVelocityY()	const { return velocityY_; }
 	bool getPrinted()		const { return isPrinted_; }
-	bool getSizeChange()	const { return sizeChanged_; }
-	char getMoveHow()		const { return moveHow_; }
-
-	void setOriginalPos(const float x, const float y)
-	{
-		ox_ = x;
-		oy_ = y;
-		x_ = ox_;
-		y_ = oy_;
-	}
+	
 	void setPos(const float x, const float y)
 	{
 		x_ = x;
 		y_ = y;
-
-		if (moveHow_ == 'd')
-		{
-			if (x - width_ <= -1 || x + width_ >= 1)
-				velocityX_ = -velocityX_;
-			if (y - height_ <= -1 || y + height_ >= 1)
-				velocityY_ = -velocityY_;
-		}
-		else if (moveHow_ == 'z')
-		{
-			if (x - width_ <= -1 || x + width_ >= 1)
-			{
-				velocityX_ = -velocityX_;
-				if (velocityY_ >= 0)
-					y_ = y + height_;
-				else y_ = y - height_;
-			}
-			if (y - height_ <= -1)
-			{
-				y_ = y + height_;
-				velocityY_ = -velocityY_;
-			}
-			else if (y + height_ >= 1)
-			{
-				y_ = y - height_;
-				velocityY_ = -velocityY_;
-			}
-		}
 	}
 	void setSize(const float w, const float h)
 	{
@@ -134,20 +83,15 @@ public:
 	{
 		red_ = r; green_ = g; blue_ = b;
 	}
-
-	void setVelocityX(const float velocity) { velocityX_ = velocity; }
-
-	void setVelocityY(const float velocity) { velocityY_ = velocity; }
-
+	
 	void setPrinted(const bool isPrinted) { isPrinted_ = isPrinted; }
-
-	void setSizeChanged(const bool sizeChanged) { sizeChanged_ = sizeChanged; }
-
-	void setMoveHow(const char move) { moveHow_ = move; }
-
+	
 };
 
-static Box rectangles[5]{};
+bool isAinB(const Box& a, const Box& b);
+
+static Box rectangles[100]{};
+static Box eraser{};
 
 void main(int argc, char** argv)
 {
@@ -166,13 +110,16 @@ void main(int argc, char** argv)
 		exit(EXIT_FAILURE);
 	}
 	else std::cout << "GLEW initialized" << std::endl;
-	
+
+	eraser.setSize(0.1f, 0.1f);
+	eraser.setRgb(0, 0, 0);
+	eraser.setPrinted(false);
+
 	glutDisplayFunc(drawScene);		// 출력 함수 지정
 	glutReshapeFunc(reshape);		// 다시 그리기 함수 지정
 	glutKeyboardFunc(keyboard);
 	glutMouseFunc(mouseClick);
 	glutMotionFunc(mouseDrag);
-	glutTimerFunc(10, timer, 1);
 
 	glutMainLoop();					// 이벤트 처리 시작
 }
@@ -187,8 +134,15 @@ GLvoid drawScene(GLvoid)
 		{
 			glColor3f(r.getRed(), r.getGreen(), r.getBlue());
 			glRectf(r.getLeft(), r.getTop(),
-				r.getRight(), r.getBottom());
+			r.getRight(), r.getBottom());
 		}
+	if (eraser.getPrinted())
+	{
+		glColor3f(eraser.getRed(), eraser.getGreen(), eraser.getBlue());
+		glRectf(eraser.getLeft(), eraser.getTop(),
+			eraser.getRight(), eraser.getBottom());
+	}
+
 	glutSwapBuffers();		// 화면에 출력
 }
 
@@ -206,29 +160,6 @@ GLvoid keyboard(unsigned char key, int x, int y)
 	case VK_ESCAPE: case 'q': case 'Q':		// 프로그램 종료
 		glutLeaveMainLoop();
 		break;
-	case 'a': case 'A':
-		for (Box& r : rectangles)
-			if (r.getMoveHow() != 'd')
-				r.setMoveHow('d');
-			else r.setMoveHow({});
-		break;
-	case 'i': case 'I':
-		for (Box& r : rectangles)
-			if (r.getMoveHow() != 'z')
-				r.setMoveHow('z');
-			else r.setMoveHow({});
-		break;
-	case 'c': case 'C':
-		changeSize = !changeSize;
-		break;
-	case 's': case 'S':
-		for (Box& r : rectangles)
-			r.setMoveHow({});
-		break;
-	case 'm': case 'M':
-		for (Box& r : rectangles)
-			r.setPos(r.getOriginalX(), r.getOriginalY());
-		break;
 	case 'r': case 'R':
 		for (Box& r : rectangles)
 			r.reset();
@@ -244,13 +175,18 @@ GLvoid mouseClick(int button, int state, int x, int y)
 	float ox{}, oy{};
 	convertCoordWinToGl(x, y, ox, oy);
 
-	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
+	if (button == GLUT_LEFT_BUTTON)
 	{
-		rectangles[count].setPrinted(true);
-		rectangles[count].setOriginalPos(ox, oy);
-		count++;
-		if (count == 5)
-			count = 0;
+		if (state == GLUT_DOWN)
+		{
+			eraser.setPos(ox, oy);
+			eraser.setPrinted(true);
+			for (Box& r : rectangles)
+				if (isAinB(r, eraser))	// r이 eraser 안에 들어가면
+					r.setPrinted(false);
+		}
+		else if (state == GLUT_UP)
+			eraser.setPrinted(false);
 	}
 
 	glutPostRedisplay();
@@ -261,33 +197,18 @@ GLvoid mouseDrag(int x, int y)
 	float ox{}, oy{};
 	convertCoordWinToGl(x, y, ox, oy);
 	
+	if (eraser.getPrinted())
+	{
+		eraser.setPos(ox, oy);
+		for (Box& r : rectangles)
+			if (isAinB(r, eraser))	// r이 eraser 안에 들어가면
+				r.setPrinted(false);
+	}
 	glutPostRedisplay();
 }
 
 GLvoid timer(int value)
 {
-	for (Box& r : rectangles)
-	{
-		if (r.getMoveHow() == 'd')
-			r.setPos(r.getX() + r.getVelocityX(), r.getY() + r.getVelocityY());
-
-		if (r.getMoveHow() == 'z')
-			r.setPos(r.getX() + r.getVelocityX(), r.getY());
-
-		if (changeSize)
-		{
-			if (r.getSizeChange())
-				r.setSize(r.getWidth() + 0.001f, r.getHeight() + 0.001f);
-			else r.setSize(r.getWidth() - 0.001f, r.getHeight() - 0.001f);
-			if (r.getWidth() >= 0.25f || r.getHeight() >= 0.25f)
-				r.setSizeChanged(false);
-			else if (r.getWidth() <= 0.05f || r.getHeight() <= 0.05f)
-				r.setSizeChanged(true);
-		}
-
-		glutPostRedisplay();
-	}
-
 	glutTimerFunc(10, timer, 1);
 }
 
@@ -306,4 +227,12 @@ void convertCoordGlToWin(const float x, const float y, int& ox, int& oy)
 	
 	ox = static_cast<int>((x + 1) / 2 * static_cast<float>(w));
 	oy = static_cast<int>(-(y + 1) / 2 * static_cast<float>(h));
+}
+
+bool isAinB(const Box& a, const Box& b)
+{
+	if (a.getLeft() >= b.getLeft() && a.getRight() <= b.getRight() &&	// 수평충돌
+		a.getTop() <= b.getTop() && a.getBottom() >= b.getBottom())		// 수직충돌
+		return true;
+	else return false;
 }
