@@ -57,10 +57,14 @@ public:
 
 	void reset()
 	{
-		ox_ = {}; oy_ = {};
-		x_ = ox_; y_ = oy_;
-		width_ = 0.1f; height_ = 0.1f;
-		
+		setOriginalPos(0, 0);
+		setSize(0.1f, 0.1f);
+		setRgb(urd(gen), urd(gen), urd(gen));
+		setVelocityX(width_ * urd(gen) / 10);
+		setVelocityY(height_ * urd(gen) / 10);
+		setPrinted(false);
+		setSizeChanged(false);
+		setMoveHow(false);
 	}
 
 	float getOriginalX()	const { return ox_; }
@@ -226,7 +230,8 @@ GLvoid keyboard(unsigned char key, int x, int y)
 			r.setPos(r.getOriginalX(), r.getOriginalY());
 		break;
 	case 'r': case 'R':
-
+		for (Box& r : rectangles)
+			r.reset();
 		break;
 	default:
 		break;
