@@ -75,8 +75,8 @@ GLvoid drawScene(GLvoid)
 	glClear(GL_COLOR_BUFFER_BIT);			// 설정된 색으로 전체 칠하기
 
 	glUseProgram(shaderId);
-	glPointSize(5.0);
-	glDrawArrays(GL_POINTS, 0, 1);
+	
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	glutSwapBuffers();		// 화면에 출력
 }
@@ -222,7 +222,7 @@ GLchar* readFile(const char*& fileName)
 
 	const int size = in.tellg();
 
-	char* buf = static_cast<char*>(malloc(size + 1));
+	char* buf = new char[size];
 
 	in.seekg(0, std::ios::beg);
 
