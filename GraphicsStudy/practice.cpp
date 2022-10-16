@@ -2,9 +2,11 @@
 #include <gl/freeglut.h>
 #include <gl/freeglut_ext.h>
 #include <iostream>
+#include <fstream>
+#include <string>
 #include <random>
 
-#define WINDOW_NAME "practice5"
+#define WINDOW_NAME "practice6"
 #define WINDOW_POS_X 100
 #define WINDOW_POS_Y 100
 
@@ -15,11 +17,17 @@ GLvoid mouseClick(int button, int state, int x, int y);	// 마우스 클릭 콜백 함수
 GLvoid mouseDrag(int x, int y);							// 마우스 드래그 콜백 함수
 GLvoid timer(int value);								// 타이머 콜백 함수
 
-void convertCoordWinToGl(const int x, const int y, float& ox, float& oy);
-void convertCoordGlToWin(const float x, const float y, int& ox, int& oy);
+void makeVertexShader();
+void makeFragmentShader();
+GLint makeShaderProgram();
 
-static int windowWidth{ 800 };
-static int windowHeight{ 600 };
+void convertCoordWinToGl(const int x, const int y, float& ox, float& oy);
+GLchar* readFile(const std::string& fileName);
+
+static GLint windowWidth{ 800 }, windowHeight{ 600 };
+GLuint shaderId{};			// 세이더 프로그램 이름
+GLuint vertexShader{};		// 버텍스 세이더 객체
+GLuint fragmentShader{};	// 프래그먼트 세이더 객체
 
 static float bgRed{ 1 }, bgGreen{ 1 }, bgBlue{ 1 };
 
@@ -27,71 +35,50 @@ static std::random_device rd;
 static std::mt19937 gen(rd());
 static std::uniform_real_distribution<float> urd(0, 1);
 
-class Box
+class myVertex
 {
 private:
-	float x_, y_;					// pos
-	float width_, height_;			// size
-	float red_, green_, blue_;		// rgb
-	bool isPrinted_;				// is printed
+	GLfloat x_, y_;					// pos
+	GLfloat size_;					// size
+	GLfloat red_, green_, blue_;	// rgb
 public:
-	Box() : x_{ -1 + urd(gen) + urd(gen) }, y_{ -1 + urd(gen) + urd(gen)},
-		width_{0.01f}, height_{0.01f},
-		red_{ urd(gen) }, green_{ urd(gen) }, blue_{ urd(gen) },
-		isPrinted_{true}
+	myVertex() : x_{ -1 + urd(gen) + urd(gen) }, y_{ -1 + urd(gen) + urd(gen)},
+		red_{ urd(gen) }, green_{ urd(gen) }, blue_{ urd(gen) }
 	{}
-
-	bool isPtInBox(const float& x, const float& y)	const
-	{
-		if (x >= x_ - width_ && y <= y_ + height_ &&
-			x <= x_ + width_ && y >= y_ - height_)
-			return true;
-		else return false;
-	}
-
+	
 	void reset()
 	{
 		setPos(-1 + urd(gen) + urd(gen), -1 + urd(gen) + urd(gen));
-		setSize(0.01f, 0.01f);
+		setSize(0.01f);
 		setRgb(urd(gen), urd(gen), urd(gen));
-		setPrinted(true);
 	}
 	
-	float getWidth()		const { return width_; }
-	float getHeight()		const { return height_; }
-	float getRed()			const { return red_; }
-	float getGreen()		const { return green_; }
-	float getBlue()			const { return blue_; }
-	float getX()			const { return x_; }
-	float getY()			const { return y_; }
-	float getLeft()			const { return x_ - width_; }
-	float getTop()			const { return y_ + height_; }
-	float getRight()		const { return x_ + width_; }
-	float getBottom()		const { return y_ - height_; }
-	bool getPrinted()		const { return isPrinted_; }
+	GLfloat getRed()			const { return red_; }
+	GLfloat getGreen()		const { return green_; }
+	GLfloat getBlue()			const { return blue_; }
+	GLfloat getX()			const { return x_; }
+	GLfloat getY()			const { return y_; }
 	
 	void setPos(const float x, const float y)
 	{
 		x_ = x;
 		y_ = y;
 	}
-	void setSize(const float w, const float h)
+	void setSize(const float s)
 	{
-		width_ = w; height_ = h;
+		size_ = s;
 	}
 	void setRgb(const float r, const float g, const float b)
 	{
 		red_ = r; green_ = g; blue_ = b;
 	}
 	
-	void setPrinted(const bool isPrinted) { isPrinted_ = isPrinted; }
-	
 };
 
-bool isAinB(const Box& a, const Box& b);
+bool isAinB(const myVertex& a, const myVertex& b);
 
-static Box rectangles[100]{};
-static Box eraser{};
+static myVertex rectangles[100]{};
+static myVertex eraser{};
 
 void main(int argc, char** argv)
 {
@@ -110,10 +97,10 @@ void main(int argc, char** argv)
 		exit(EXIT_FAILURE);
 	}
 	else std::cout << "GLEW initialized" << std::endl;
-
-	eraser.setSize(0.1f, 0.1f);
-	eraser.setRgb(0, 0, 0);
-	eraser.setPrinted(false);
+	
+	makeVertexShader();
+	makeFragmentShader();
+	shaderId = makeShaderProgram();
 
 	glutDisplayFunc(drawScene);		// 출력 함수 지정
 	glutReshapeFunc(reshape);		// 다시 그리기 함수 지정
@@ -129,20 +116,6 @@ GLvoid drawScene(GLvoid)
 	glClearColor(bgRed, bgGreen, bgBlue, 1.0f);	// 바탕색 지정
 	glClear(GL_COLOR_BUFFER_BIT);			// 설정된 색으로 전체 칠하기
 	
-	for (const Box& r : rectangles)
-		if (r.getPrinted())
-		{
-			glColor3f(r.getRed(), r.getGreen(), r.getBlue());
-			glRectf(r.getLeft(), r.getTop(),
-			r.getRight(), r.getBottom());
-		}
-	if (eraser.getPrinted())
-	{
-		glColor3f(eraser.getRed(), eraser.getGreen(), eraser.getBlue());
-		glRectf(eraser.getLeft(), eraser.getTop(),
-			eraser.getRight(), eraser.getBottom());
-	}
-
 	glutSwapBuffers();		// 화면에 출력
 }
 
@@ -161,7 +134,7 @@ GLvoid keyboard(unsigned char key, int x, int y)
 		glutLeaveMainLoop();
 		break;
 	case 'r': case 'R':
-		for (Box& r : rectangles)
+		for (myVertex& r : rectangles)
 			r.reset();
 		break;
 	default:
@@ -175,20 +148,6 @@ GLvoid mouseClick(int button, int state, int x, int y)
 	float ox{}, oy{};
 	convertCoordWinToGl(x, y, ox, oy);
 
-	if (button == GLUT_LEFT_BUTTON)
-	{
-		if (state == GLUT_DOWN)
-		{
-			eraser.setPos(ox, oy);
-			eraser.setPrinted(true);
-			for (Box& r : rectangles)
-				if (isAinB(r, eraser))	// r이 eraser 안에 들어가면
-					r.setPrinted(false);
-		}
-		else if (state == GLUT_UP)
-			eraser.setPrinted(false);
-	}
-
 	glutPostRedisplay();
 }
 
@@ -197,13 +156,6 @@ GLvoid mouseDrag(int x, int y)
 	float ox{}, oy{};
 	convertCoordWinToGl(x, y, ox, oy);
 	
-	if (eraser.getPrinted())
-	{
-		eraser.setPos(ox, oy);
-		for (Box& r : rectangles)
-			if (isAinB(r, eraser))	// r이 eraser 안에 들어가면
-				r.setPrinted(false);
-	}
 	glutPostRedisplay();
 }
 
@@ -211,6 +163,80 @@ GLvoid timer(int value)
 {
 	glutTimerFunc(10, timer, 1);
 }
+
+void makeVertexShader()
+{
+	GLchar* vertexSource;
+	std::string vertexShaderName{ "vertexShader.glsl" };
+
+	vertexSource = readFile(vertexShaderName);
+	vertexShader = glCreateShader(GL_VERTEX_SHADER);
+	glShaderSource(vertexShader, 1, &vertexSource, nullptr);
+	glCompileShader(vertexShader);
+
+	GLint result;
+	GLchar errorLog[512];
+	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &result);
+
+	if(!result)
+	{
+		glGetShaderInfoLog(vertexShader, 512, nullptr, errorLog);
+		std::cerr << "ERROR: Vertex shader 컴파일 실패" << std::endl << errorLog << std::endl;
+		return;
+	}
+}
+
+void makeFragmentShader()
+{
+	GLchar* fragmentSource;
+	std::string fragmentShaderName{ "fragmentShader.glsl" };
+
+	fragmentSource = readFile(fragmentShaderName);
+	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(fragmentShader, 1, &fragmentSource, nullptr);
+	glCompileShader(fragmentShader);
+
+	GLint result;
+	GLchar errorLog[512];
+	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &result);
+
+	if(!result)
+	{
+		glGetShaderInfoLog(fragmentShader, 512, nullptr, errorLog);
+		std::cerr << "ERROR: Fragment shader 컴파일 실패" << std::endl << errorLog << std::endl;
+		return;
+	}
+}
+
+GLint makeShaderProgram()
+{
+	GLuint shaderProgramId;
+	shaderProgramId = glCreateProgram();
+
+	glAttachShader(shaderProgramId, vertexShader);
+	glAttachShader(shaderProgramId, fragmentShader);
+
+	glLinkProgram(shaderProgramId);
+
+	glDeleteShader(vertexShader);
+	glDeleteShader(fragmentShader);
+
+	GLint result;
+	GLchar errorLog[512];
+	glGetProgramiv(shaderProgramId, GL_LINK_STATUS, &result);
+
+	if (!result)
+	{
+		glGetProgramInfoLog(shaderProgramId, 512, nullptr, errorLog);
+		std::cerr << "ERROR: Shader program 연결 실패" << std::endl << errorLog << std::endl;
+		return false;
+	}
+
+	glUseProgram(shaderProgramId);
+
+	return shaderProgramId;
+}
+
 
 void convertCoordWinToGl(const int x, const int y, float& ox, float& oy)
 {
@@ -220,19 +246,29 @@ void convertCoordWinToGl(const int x, const int y, float& ox, float& oy)
 	oy = { -(static_cast<float>(y) - (h / 2.0f)) * (1.0f / (h / 2.0f)) };
 }
 
-void convertCoordGlToWin(const float x, const float y, int& ox, int& oy)
+GLchar* readFile(const std::string& fileName)
 {
-	const int w{ windowWidth };
-	const int h{ windowHeight };
-	
-	ox = static_cast<int>((x + 1) / 2 * static_cast<float>(w));
-	oy = static_cast<int>(-(y + 1) / 2 * static_cast<float>(h));
-}
+	std::ifstream in;
+	std::string str;
 
-bool isAinB(const Box& a, const Box& b)
-{
-	if (a.getLeft() >= b.getLeft() && a.getRight() <= b.getRight() &&	// 수평충돌
-		a.getTop() <= b.getTop() && a.getBottom() >= b.getBottom())		// 수직충돌
-		return true;
-	else return false;
+	in.open(fileName);
+
+	if (!in.is_open())
+	{
+		std::cerr << "The file is not exist." << std::endl;
+		return {};
+	}
+
+	in.seekg(0, std::ios::end);
+
+	const int size = in.tellg();
+
+	in.seekg(0, std::ios::beg);
+
+	str.resize(size);
+
+	in.read(&str[0], size);
+
+	const char* temp{ str.c_str() };
+	return const_cast<char*>(temp);
 }
