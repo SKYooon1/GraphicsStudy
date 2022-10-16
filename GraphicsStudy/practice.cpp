@@ -3,13 +3,13 @@
 #include <gl/freeglut_ext.h>
 #include <iostream>
 #include <fstream>
-#include <string>
 #include <random>
 
 #define WINDOW_NAME "practice6"
 #define WINDOW_POS_X 100
 #define WINDOW_POS_Y 100
 
+// 콜백 함수
 GLvoid drawScene(GLvoid);								// 그리기 콜백함수
 GLvoid reshape(int w, int h);							// 다시 그리기 콜백 함수
 GLvoid keyboard(unsigned char key, int x, int y);		// 키보드 콜백 함수
@@ -17,68 +17,26 @@ GLvoid mouseClick(int button, int state, int x, int y);	// 마우스 클릭 콜백 함수
 GLvoid mouseDrag(int x, int y);							// 마우스 드래그 콜백 함수
 GLvoid timer(int value);								// 타이머 콜백 함수
 
-void makeVertexShader();
-void makeFragmentShader();
-GLint makeShaderProgram();
+// 셰이더 관련 함수
+void makeVertexShader();		// 버텍스 셰이더 만들기
+void makeFragmentShader();		// 프래그먼트 셰이더 만들기
+GLint makeShaderProgram();		// 셰이더 프로그램 만들기
 
+GLchar* readFile(const char*& fileName);		// 파일 읽기 함수
+
+// 좌표 변환 함수
 void convertCoordWinToGl(const int x, const int y, float& ox, float& oy);
-GLchar* readFile(const std::string& fileName);
 
 static GLint windowWidth{ 800 }, windowHeight{ 600 };
 GLuint shaderId{};			// 세이더 프로그램 이름
 GLuint vertexShader{};		// 버텍스 세이더 객체
 GLuint fragmentShader{};	// 프래그먼트 세이더 객체
 
-static float bgRed{ 1 }, bgGreen{ 1 }, bgBlue{ 1 };
+static float bgRed{ 0 }, bgGreen{ 0 }, bgBlue{ 1 };
 
 static std::random_device rd;
 static std::mt19937 gen(rd());
 static std::uniform_real_distribution<float> urd(0, 1);
-
-class myVertex
-{
-private:
-	GLfloat x_, y_;					// pos
-	GLfloat size_;					// size
-	GLfloat red_, green_, blue_;	// rgb
-public:
-	myVertex() : x_{ -1 + urd(gen) + urd(gen) }, y_{ -1 + urd(gen) + urd(gen)},
-		red_{ urd(gen) }, green_{ urd(gen) }, blue_{ urd(gen) }
-	{}
-	
-	void reset()
-	{
-		setPos(-1 + urd(gen) + urd(gen), -1 + urd(gen) + urd(gen));
-		setSize(0.01f);
-		setRgb(urd(gen), urd(gen), urd(gen));
-	}
-	
-	GLfloat getRed()			const { return red_; }
-	GLfloat getGreen()		const { return green_; }
-	GLfloat getBlue()			const { return blue_; }
-	GLfloat getX()			const { return x_; }
-	GLfloat getY()			const { return y_; }
-	
-	void setPos(const float x, const float y)
-	{
-		x_ = x;
-		y_ = y;
-	}
-	void setSize(const float s)
-	{
-		size_ = s;
-	}
-	void setRgb(const float r, const float g, const float b)
-	{
-		red_ = r; green_ = g; blue_ = b;
-	}
-	
-};
-
-bool isAinB(const myVertex& a, const myVertex& b);
-
-static myVertex rectangles[100]{};
-static myVertex eraser{};
 
 void main(int argc, char** argv)
 {
@@ -115,7 +73,11 @@ GLvoid drawScene(GLvoid)
 {
 	glClearColor(bgRed, bgGreen, bgBlue, 1.0f);	// 바탕색 지정
 	glClear(GL_COLOR_BUFFER_BIT);			// 설정된 색으로 전체 칠하기
-	
+
+	glUseProgram(shaderId);
+	glPointSize(5.0);
+	glDrawArrays(GL_POINTS, 0, 1);
+
 	glutSwapBuffers();		// 화면에 출력
 }
 
@@ -134,8 +96,7 @@ GLvoid keyboard(unsigned char key, int x, int y)
 		glutLeaveMainLoop();
 		break;
 	case 'r': case 'R':
-		for (myVertex& r : rectangles)
-			r.reset();
+
 		break;
 	default:
 		break;
@@ -167,7 +128,7 @@ GLvoid timer(int value)
 void makeVertexShader()
 {
 	GLchar* vertexSource;
-	std::string vertexShaderName{ "vertexShader.glsl" };
+	const char* vertexShaderName{ "vertexShader.glsl" };
 
 	vertexSource = readFile(vertexShaderName);
 	vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -189,7 +150,7 @@ void makeVertexShader()
 void makeFragmentShader()
 {
 	GLchar* fragmentSource;
-	std::string fragmentShaderName{ "fragmentShader.glsl" };
+	const char* fragmentShaderName{ "fragmentShader.glsl" };
 
 	fragmentSource = readFile(fragmentShaderName);
 	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
@@ -246,11 +207,9 @@ void convertCoordWinToGl(const int x, const int y, float& ox, float& oy)
 	oy = { -(static_cast<float>(y) - (h / 2.0f)) * (1.0f / (h / 2.0f)) };
 }
 
-GLchar* readFile(const std::string& fileName)
+GLchar* readFile(const char*& fileName)
 {
 	std::ifstream in;
-	std::string str;
-
 	in.open(fileName);
 
 	if (!in.is_open())
@@ -263,12 +222,11 @@ GLchar* readFile(const std::string& fileName)
 
 	const int size = in.tellg();
 
+	char* buf = static_cast<char*>(malloc(size + 1));
+
 	in.seekg(0, std::ios::beg);
 
-	str.resize(size);
-
-	in.read(&str[0], size);
-
-	const char* temp{ str.c_str() };
-	return const_cast<char*>(temp);
+	in.read(buf, size);
+	
+	return buf;
 }
