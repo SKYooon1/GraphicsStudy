@@ -1,13 +1,14 @@
 #include <gl/glew.h>
 #include <gl/freeglut.h>
 #include <gl/freeglut_ext.h>
-#include <iostream>
-#include <fstream>
-#include <random>
+#include "myFunction.h"
 
 #define WINDOW_NAME "practice6"
 #define WINDOW_POS_X 100
 #define WINDOW_POS_Y 100
+
+static int windowWidth{ 800 }, windowHeight{ 600 };
+static float bgRed{ 0 }, bgGreen{ 0 }, bgBlue{ 1 };
 
 // 콜백 함수
 GLvoid drawScene(GLvoid);								// 그리기 콜백함수
@@ -22,21 +23,9 @@ void makeVertexShader();		// 버텍스 셰이더 만들기
 void makeFragmentShader();		// 프래그먼트 셰이더 만들기
 GLint makeShaderProgram();		// 셰이더 프로그램 만들기
 
-GLchar* readFile(const char*& fileName);		// 파일 읽기 함수
-
-// 좌표 변환 함수
-void convertCoordWinToGl(const int x, const int y, float& ox, float& oy);
-
-static GLint windowWidth{ 800 }, windowHeight{ 600 };
 GLuint shaderId{};			// 세이더 프로그램 이름
 GLuint vertexShader{};		// 버텍스 세이더 객체
 GLuint fragmentShader{};	// 프래그먼트 세이더 객체
-
-static float bgRed{ 0 }, bgGreen{ 0 }, bgBlue{ 1 };
-
-static std::random_device rd;
-static std::mt19937 gen(rd());
-static std::uniform_real_distribution<float> urd(0, 1);
 
 void main(int argc, char** argv)
 {
@@ -107,7 +96,7 @@ GLvoid keyboard(unsigned char key, int x, int y)
 GLvoid mouseClick(int button, int state, int x, int y)
 {
 	float ox{}, oy{};
-	convertCoordWinToGl(x, y, ox, oy);
+	convertCoordinateWinToGl(x, y, ox, oy, windowWidth, windowHeight);
 
 	glutPostRedisplay();
 }
@@ -115,7 +104,7 @@ GLvoid mouseClick(int button, int state, int x, int y)
 GLvoid mouseDrag(int x, int y)
 {
 	float ox{}, oy{};
-	convertCoordWinToGl(x, y, ox, oy);
+	convertCoordinateWinToGl(x, y, ox, oy, windowWidth, windowHeight);
 	
 	glutPostRedisplay();
 }
@@ -196,37 +185,4 @@ GLint makeShaderProgram()
 	glUseProgram(shaderProgramId);
 
 	return shaderProgramId;
-}
-
-
-void convertCoordWinToGl(const int x, const int y, float& ox, float& oy)
-{
-	const float w{ static_cast<float>(windowWidth) };
-	const float h{ static_cast<float>(windowHeight) };
-	ox = { (static_cast<float>(x) - (w / 2.0f)) * (1.0f / (w / 2.0f)) };
-	oy = { -(static_cast<float>(y) - (h / 2.0f)) * (1.0f / (h / 2.0f)) };
-}
-
-GLchar* readFile(const char*& fileName)
-{
-	std::ifstream in;
-	in.open(fileName);
-
-	if (!in.is_open())
-	{
-		std::cerr << "The file is not exist." << std::endl;
-		return {};
-	}
-
-	in.seekg(0, std::ios::end);
-
-	const int size = in.tellg();
-
-	char* buf = new char[size];
-
-	in.seekg(0, std::ios::beg);
-
-	in.read(buf, size);
-	
-	return buf;
 }
