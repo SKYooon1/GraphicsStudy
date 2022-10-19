@@ -15,24 +15,19 @@ char* readFile(const char*& fileName);
 void convertCoordinateWinToGl(const int x, const int y, float& ox, float& oy,
     const int width, const int height);
 
-class myVertex
+class Vertex
 {
 private:
 	float x_, y_;					// pos
 	float size_;					// size
-	float red_, green_, blue_;	// rgb
+	float red_, green_, blue_;		// rgb
+	static int totalVertexNum_;
 
 public:
-	myVertex() : x_{ -1 + urd(gen) + urd(gen) }, y_{ -1 + urd(gen) + urd(gen) },
-		red_{ urd(gen) }, green_{ urd(gen) }, blue_{ urd(gen) }
-	{}
+	Vertex();
+	~Vertex();
 
-	void reset()
-	{
-		setPos(-1 + urd(gen) + urd(gen), -1 + urd(gen) + urd(gen));
-		setSize(0.01f);
-		setRgb(urd(gen), urd(gen), urd(gen));
-	}
+	void reset();
 
 	float getRed()			const { return red_; }
 	float getGreen()		const { return green_; }
@@ -40,18 +35,7 @@ public:
 	float getX()			const { return x_; }
 	float getY()			const { return y_; }
 
-	void setPos(const float x, const float y)
-	{
-		x_ = x;
-		y_ = y;
-	}
-	void setSize(const float s)
-	{
-		size_ = s;
-	}
-	void setRgb(const float r, const float g, const float b)
-	{
-		red_ = r; green_ = g; blue_ = b;
-	}
-
+	void setPos(const float x, const float y);
+	void setSize(const float s);
+	void setRgb(const float r, const float g, const float b);
 };
