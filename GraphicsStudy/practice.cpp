@@ -18,14 +18,89 @@ GLvoid mouseClick(int button, int state, int x, int y);	// 마우스 클릭 콜백 함수
 GLvoid mouseDrag(int x, int y);							// 마우스 드래그 콜백 함수
 GLvoid timer(int value);								// 타이머 콜백 함수
 
-// 셰이더 관련 함수
-void makeVertexShader();		// 버텍스 셰이더 만들기
-void makeFragmentShader();		// 프래그먼트 셰이더 만들기
-GLint makeShaderProgram();		// 셰이더 프로그램 만들기
+class Shader {
+public:
+	Shader();
 
-GLuint shaderId{};			// 세이더 프로그램 이름
-GLuint vertexShader{};		// 버텍스 세이더 객체
-GLuint fragmentShader{};	// 프래그먼트 세이더 객체
+	GLvoid makeVertexShader();
+	GLvoid makeFragmentShader();
+	GLvoid makeShader(const char* shaderName);
+	GLvoid makeShaderProgram();
+	void isSucceeded();
+	void isSucceeded(GLuint shader, const char* name);
+
+	GLuint getId()	const { return id_; }
+
+private:
+	GLuint id_;
+	GLuint vertex_;
+	GLuint fragment_;
+};
+
+Shader::Shader() : id_{}, vertex_{}, fragment_{}
+{}
+
+void Shader::isSucceeded() {
+	GLint result;
+	glGetProgramiv(id_, GL_LINK_STATUS, &result);
+
+	if (!result)
+	{
+		GLchar errorLog[512];
+		glGetProgramInfoLog(id_, 512, nullptr, errorLog);
+		std::cerr << "ERROR: Shader program 연결 실패" << std::endl << errorLog << std::endl;
+	}
+}
+
+void Shader::isSucceeded(GLuint shader, const char* name) {
+	GLint result;
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &result);
+
+	if (!result)
+	{
+		GLchar errorLog[512];
+		glGetShaderInfoLog(shader, 512, nullptr, errorLog);
+		std::cerr << "ERROR: " << name << " 컴파일 실패" << std::endl << errorLog << std::endl;
+	}
+}
+
+GLvoid Shader::makeVertexShader() {
+	const char* vertexShader{ "vertexShader.glsl" };
+	GLchar* vertexSource = readFile(vertexShader);
+
+	vertex_ = glCreateShader(GL_VERTEX_SHADER);
+	glShaderSource(vertex_, 1, &vertexSource, nullptr);
+	glCompileShader(vertex_);
+
+	isSucceeded(vertex_, vertexShader);
+}
+
+GLvoid Shader::makeFragmentShader() {
+	const char* fragmentShader{ "fragmentShader.glsl" };
+	GLchar* fragmentSource = readFile(fragmentShader);
+
+	fragment_ = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(fragment_, 1, &fragmentSource, nullptr);
+	glCompileShader(fragment_);
+
+	isSucceeded(fragment_, fragmentShader);
+}
+
+GLvoid Shader::makeShaderProgram() {
+	id_ = glCreateProgram();
+
+	glAttachShader(id_, vertex_);
+	glAttachShader(id_, fragment_);
+
+	glLinkProgram(id_);
+
+	glDeleteShader(vertex_);
+	glDeleteShader(fragment_);
+
+	isSucceeded();
+}
+
+Shader myShader;
 
 void main(int argc, char** argv)
 {
@@ -44,10 +119,10 @@ void main(int argc, char** argv)
 		exit(EXIT_FAILURE);
 	}
 	else std::cout << "GLEW initialized" << std::endl;
-	
-	makeVertexShader();
-	makeFragmentShader();
-	shaderId = makeShaderProgram();
+
+	myShader.makeVertexShader();
+	myShader.makeFragmentShader();
+	myShader.makeShaderProgram();
 
 	glutDisplayFunc(drawScene);		// 출력 함수 지정
 	glutReshapeFunc(reshape);		// 다시 그리기 함수 지정
@@ -63,7 +138,7 @@ GLvoid drawScene(GLvoid)
 	glClearColor(bgRed, bgGreen, bgBlue, 1.0f);	// 바탕색 지정
 	glClear(GL_COLOR_BUFFER_BIT);			// 설정된 색으로 전체 칠하기
 
-	glUseProgram(shaderId);
+	glUseProgram(myShader.getId());
 	
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
@@ -112,77 +187,4 @@ GLvoid mouseDrag(int x, int y)
 GLvoid timer(int value)
 {
 	glutTimerFunc(10, timer, 1);
-}
-
-void makeVertexShader()
-{
-	GLchar* vertexSource;
-	const char* vertexShaderName{ "vertexShader.glsl" };
-
-	vertexSource = readFile(vertexShaderName);
-	vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertexShader, 1, &vertexSource, nullptr);
-	glCompileShader(vertexShader);
-
-	GLint result;
-	GLchar errorLog[512];
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &result);
-
-	if(!result)
-	{
-		glGetShaderInfoLog(vertexShader, 512, nullptr, errorLog);
-		std::cerr << "ERROR: Vertex shader 컴파일 실패" << std::endl << errorLog << std::endl;
-		return;
-	}
-}
-
-void makeFragmentShader()
-{
-	GLchar* fragmentSource;
-	const char* fragmentShaderName{ "fragmentShader.glsl" };
-
-	fragmentSource = readFile(fragmentShaderName);
-	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragmentShader, 1, &fragmentSource, nullptr);
-	glCompileShader(fragmentShader);
-
-	GLint result;
-	GLchar errorLog[512];
-	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &result);
-
-	if(!result)
-	{
-		glGetShaderInfoLog(fragmentShader, 512, nullptr, errorLog);
-		std::cerr << "ERROR: Fragment shader 컴파일 실패" << std::endl << errorLog << std::endl;
-		return;
-	}
-}
-
-GLint makeShaderProgram()
-{
-	GLuint shaderProgramId;
-	shaderProgramId = glCreateProgram();
-
-	glAttachShader(shaderProgramId, vertexShader);
-	glAttachShader(shaderProgramId, fragmentShader);
-
-	glLinkProgram(shaderProgramId);
-
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
-
-	GLint result;
-	GLchar errorLog[512];
-	glGetProgramiv(shaderProgramId, GL_LINK_STATUS, &result);
-
-	if (!result)
-	{
-		glGetProgramInfoLog(shaderProgramId, 512, nullptr, errorLog);
-		std::cerr << "ERROR: Shader program 연결 실패" << std::endl << errorLog << std::endl;
-		return false;
-	}
-
-	glUseProgram(shaderProgramId);
-
-	return shaderProgramId;
 }
