@@ -2,8 +2,9 @@
 #include <gl/freeglut.h>
 #include <gl/freeglut_ext.h>
 #include "myFunction.h"
+#include "Shader.h"
 
-#define WINDOW_NAME "practice6"
+#define WINDOW_NAME "practice18"
 #define WINDOW_POS_X 100
 #define WINDOW_POS_Y 100
 
@@ -17,88 +18,6 @@ GLvoid keyboard(unsigned char key, int x, int y);		// 키보드 콜백 함수
 GLvoid mouseClick(int button, int state, int x, int y);	// 마우스 클릭 콜백 함수
 GLvoid mouseDrag(int x, int y);							// 마우스 드래그 콜백 함수
 GLvoid timer(int value);								// 타이머 콜백 함수
-
-class Shader {
-public:
-	Shader();
-
-	GLvoid makeVertexShader();
-	GLvoid makeFragmentShader();
-	GLvoid makeShader(const char* shaderName);
-	GLvoid makeShaderProgram();
-	void isSucceeded();
-	void isSucceeded(GLuint shader, const char* name);
-
-	GLuint getId()	const { return id_; }
-
-private:
-	GLuint id_;
-	GLuint vertex_;
-	GLuint fragment_;
-};
-
-Shader::Shader() : id_{}, vertex_{}, fragment_{}
-{}
-
-void Shader::isSucceeded() {
-	GLint result;
-	glGetProgramiv(id_, GL_LINK_STATUS, &result);
-
-	if (!result)
-	{
-		GLchar errorLog[512];
-		glGetProgramInfoLog(id_, 512, nullptr, errorLog);
-		std::cerr << "ERROR: Shader program 연결 실패" << std::endl << errorLog << std::endl;
-	}
-}
-
-void Shader::isSucceeded(GLuint shader, const char* name) {
-	GLint result;
-	glGetShaderiv(shader, GL_COMPILE_STATUS, &result);
-
-	if (!result)
-	{
-		GLchar errorLog[512];
-		glGetShaderInfoLog(shader, 512, nullptr, errorLog);
-		std::cerr << "ERROR: " << name << " 컴파일 실패" << std::endl << errorLog << std::endl;
-	}
-}
-
-GLvoid Shader::makeVertexShader() {
-	const char* vertexShader{ "vertexShader.glsl" };
-	GLchar* vertexSource = readFile(vertexShader);
-
-	vertex_ = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertex_, 1, &vertexSource, nullptr);
-	glCompileShader(vertex_);
-
-	isSucceeded(vertex_, vertexShader);
-}
-
-GLvoid Shader::makeFragmentShader() {
-	const char* fragmentShader{ "fragmentShader.glsl" };
-	GLchar* fragmentSource = readFile(fragmentShader);
-
-	fragment_ = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragment_, 1, &fragmentSource, nullptr);
-	glCompileShader(fragment_);
-
-	isSucceeded(fragment_, fragmentShader);
-}
-
-GLvoid Shader::makeShaderProgram() {
-	id_ = glCreateProgram();
-
-	glAttachShader(id_, vertex_);
-	glAttachShader(id_, fragment_);
-
-	glLinkProgram(id_);
-
-	glDeleteShader(vertex_);
-	glDeleteShader(fragment_);
-
-	isSucceeded();
-}
 
 Shader myShader;
 
@@ -119,10 +38,8 @@ void main(int argc, char** argv)
 		exit(EXIT_FAILURE);
 	}
 	else std::cout << "GLEW initialized" << std::endl;
-
-	myShader.makeVertexShader();
-	myShader.makeFragmentShader();
-	myShader.makeShaderProgram();
+	
+	myShader.initShader();
 
 	glutDisplayFunc(drawScene);		// 출력 함수 지정
 	glutReshapeFunc(reshape);		// 다시 그리기 함수 지정
