@@ -6,8 +6,7 @@
 #define WINDOW_POS_Y 100
 
 static int windowWidth{ 800 }, windowHeight{ 600 };
-static float bgRed{ 1 }, bgGreen{ 1 }, bgBlue{ 1 };
-static Vertex Triangles[4]{};
+static float bgRed{ 0 }, bgGreen{ 0 }, bgBlue{ 1 };
 
 // 콜백 함수
 GLvoid drawScene(GLvoid);								// 그리기 콜백함수
@@ -53,7 +52,7 @@ GLvoid drawScene(GLvoid)
 	glClearColor(bgRed, bgGreen, bgBlue, 1.0f);	// 바탕색 지정
 	glClear(GL_COLOR_BUFFER_BIT);			// 설정된 색으로 전체 칠하기
 
-	glUseProgram(myShader.getID());
+	glUseProgram(myShader.getId());
 	
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
