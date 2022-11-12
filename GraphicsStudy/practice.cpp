@@ -1,6 +1,7 @@
 #include "myFunction.h"
+#include "Shader.h"
 
-#define WINDOW_NAME "practice6"
+#define WINDOW_NAME "practice18"
 #define WINDOW_POS_X 100
 #define WINDOW_POS_Y 100
 
@@ -35,6 +36,8 @@ void main(int argc, char** argv)
 		exit(EXIT_FAILURE);
 	}
 	else std::cout << "GLEW initialized" << std::endl;
+	
+	myShader.initShader();
 
 	glutDisplayFunc(drawScene);		// 출력 함수 지정
 	glutReshapeFunc(reshape);		// 다시 그리기 함수 지정

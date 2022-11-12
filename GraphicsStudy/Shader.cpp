@@ -1,51 +1,61 @@
-﻿#include <iostream>
-#include "Shader.h"
+﻿#include "Shader.h"
 
-Shader::Shader() {
-	initVertex();
-	initFragment();
-	initProgram();
+Shader::Shader() : id_{}, vertex_{}, fragment_{}
+{}
+
+GLvoid Shader::initShader() {
+	makeVertexShader();
+	makeFragmentShader();
+	makeShaderProgram();
 }
 
-GLvoid Shader::initVertex() {
+void Shader::isSucceeded() {
+	GLint result;
+	glGetProgramiv(id_, GL_LINK_STATUS, &result);
+
+	if (!result)
+	{
+		GLchar errorLog[512];
+		glGetProgramInfoLog(id_, 512, nullptr, errorLog);
+		std::cerr << "ERROR: Shader program 연결 실패" << std::endl << errorLog << std::endl;
+	}
+}
+
+void Shader::isSucceeded(GLuint shader, const char* name) {
+	GLint result;
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &result);
+
+	if (!result)
+	{
+		GLchar errorLog[512];
+		glGetShaderInfoLog(shader, 512, nullptr, errorLog);
+		std::cerr << "ERROR: " << name << " 컴파일 실패" << std::endl << errorLog << std::endl;
+	}
+}
+
+GLvoid Shader::makeVertexShader() {
 	const char* vertexShader{ "vertexShader.glsl" };
-	const GLchar* vertexSource{ readFile(vertexShader) };
+	GLchar* vertexSource = readFile(vertexShader);
 
 	vertex_ = glCreateShader(GL_VERTEX_SHADER);
 	glShaderSource(vertex_, 1, &vertexSource, nullptr);
 	glCompileShader(vertex_);
 
-	GLint result;
-	glGetShaderiv(vertex_, GL_COMPILE_STATUS, &result);
-
-	if (!result)
-	{
-		GLchar errorLog[512];
-		glGetShaderInfoLog(vertex_, 512, nullptr, errorLog);
-		std::cerr << "ERROR: Vertex shader 컴파일 실패" << std::endl << errorLog << std::endl;
-	}
+	isSucceeded(vertex_, vertexShader);
 }
 
-GLvoid Shader::initFragment() {
+GLvoid Shader::makeFragmentShader() {
 	const char* fragmentShader{ "fragmentShader.glsl" };
-	const GLchar* fragmentSource{ readFile(fragmentShader) };
+	GLchar* fragmentSource = readFile(fragmentShader);
 
 	fragment_ = glCreateShader(GL_FRAGMENT_SHADER);
 	glShaderSource(fragment_, 1, &fragmentSource, nullptr);
 	glCompileShader(fragment_);
 
-	GLint result;
-	glGetShaderiv(fragment_, GL_COMPILE_STATUS, &result);
-
-	if (!result)
-	{
-		GLchar errorLog[512];
-		glGetShaderInfoLog(fragment_, 512, nullptr, errorLog);
-		std::cerr << "ERROR: Fragment shader 컴파일 실패" << std::endl << errorLog << std::endl;
-	}
+	isSucceeded(fragment_, fragmentShader);
 }
 
-GLvoid Shader::initProgram() {
+GLvoid Shader::makeShaderProgram() {
 	id_ = glCreateProgram();
 
 	glAttachShader(id_, vertex_);
@@ -56,13 +66,5 @@ GLvoid Shader::initProgram() {
 	glDeleteShader(vertex_);
 	glDeleteShader(fragment_);
 
-	GLint result;
-	glGetProgramiv(id_, GL_LINK_STATUS, &result);
-
-	if (!result)
-	{
-		GLchar errorLog[512];
-		glGetProgramInfoLog(id_, 512, nullptr, errorLog);
-		std::cerr << "ERROR: Shader program 연결 실패" << std::endl << errorLog << std::endl;
-	}
+	isSucceeded();
 }

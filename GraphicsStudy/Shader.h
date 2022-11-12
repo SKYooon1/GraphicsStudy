@@ -1,17 +1,23 @@
 ﻿#pragma once
 
 #include <gl/glew.h>
+#include <gl/freeglut.h>
+#include <gl/freeglut_ext.h>
+#include "myFunction.h"
 
-// 나만의 셰이더 클래스
+// ������ ���̴� Ŭ����
 class Shader {
 public:
 	Shader();
 
-	GLvoid initVertex();
-	GLvoid initFragment();
-	GLvoid initProgram();
+	GLvoid makeVertexShader();
+	GLvoid makeFragmentShader();
+	GLvoid initShader();
+	GLvoid makeShaderProgram();
+	void isSucceeded();
+	void isSucceeded(GLuint shader, const char* name);
 
-	GLuint getID()	const { return id_; }
+	GLuint getId()	const { return id_; }
 
 private:
 	GLuint id_;
